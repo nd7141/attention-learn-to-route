@@ -67,6 +67,7 @@ class AttentionModel(nn.Module):
         self.is_orienteering = problem.NAME == 'op'
         self.is_pctsp = problem.NAME == 'pctsp'
         self.is_graph = problem.NAME == 'graph'
+        self.is_tsp = problem.NAME == 'tsp'
 
         self.tanh_clipping = tanh_clipping
 
@@ -93,10 +94,13 @@ class AttentionModel(nn.Module):
             
             if self.is_vrp and self.allow_partial:  # Need to include the demand if split delivery allowed
                 self.project_node_step = nn.Linear(1, 3 * embedding_dim, bias=False)
-        else:  # TSP
+        elif self.is_tsp:  # TSP
             assert problem.NAME == "tsp", "Unsupported problem: {}".format(problem.NAME)
             step_context_dim = 2 * embedding_dim  # Embedding of first and last node
             node_dim = 2  # x, y
+        else: # graph
+            step_context_dim = embedding_dim
+            node_dim = 1 # node number for now (TO DO: parametrize later)
             
             # Learned input symbols for first action
             self.W_placeholder = nn.Parameter(torch.Tensor(2 * embedding_dim))
@@ -203,7 +207,7 @@ class AttentionModel(nn.Module):
 
     def _init_embed(self, input):
 
-        # get input from networkx graph
+        # For graph just call self.init_embed(input)
 
         if self.is_vrp or self.is_orienteering or self.is_pctsp:
             if self.is_vrp:
