@@ -2,13 +2,13 @@ from torch.utils.data import Dataset
 import torch
 import os
 import pickle
-from problems.tsp.state_tsp import StateTSP
+from problems.graph.state_graph import StateGraph
 from utils.beam_search import beam_search
 
 
-class TSP(object):
+class Graph(object):
 
-    NAME = 'tsp'
+    NAME = 'graph'
 
     @staticmethod
     def get_costs(dataset, pi):
@@ -26,11 +26,11 @@ class TSP(object):
 
     @staticmethod
     def make_dataset(*args, **kwargs):
-        return TSPDataset(*args, **kwargs)
+        return GraphDataset(*args, **kwargs)
 
     @staticmethod
     def make_state(*args, **kwargs):
-        return StateTSP.initialize(*args, **kwargs)
+        return StateGraph.initialize(*args, **kwargs)
 
     @staticmethod
     def beam_search(input, beam_size, expand_size=None,
@@ -45,17 +45,19 @@ class TSP(object):
                 beam, fixed, expand_size, normalize=True, max_calc_batch_size=max_calc_batch_size
             )
 
-        state = TSP.make_state(
+        state = Graph.make_state(
             input, visited_dtype=torch.int64 if compress_mask else torch.uint8
         )
 
         return beam_search(state, beam_size, propose_expansions)
 
 
-class TSPDataset(Dataset):
+class GraphDataset(Dataset):
+
+    # Create dataset as a set of networkx graphs
     
     def __init__(self, filename=None, size=50, num_samples=1000000, offset=0, distribution=None):
-        super(TSPDataset, self).__init__()
+        super(GraphDataset, self).__init__()
 
         self.data_set = []
         if filename is not None:

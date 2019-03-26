@@ -66,6 +66,7 @@ class AttentionModel(nn.Module):
         self.is_vrp = problem.NAME == 'cvrp' or problem.NAME == 'sdvrp'
         self.is_orienteering = problem.NAME == 'op'
         self.is_pctsp = problem.NAME == 'pctsp'
+        self.is_graph = problem.NAME == 'graph'
 
         self.tanh_clipping = tanh_clipping
 
@@ -201,6 +202,8 @@ class AttentionModel(nn.Module):
         return log_p.sum(1)
 
     def _init_embed(self, input):
+
+        # get input from networkx graph
 
         if self.is_vrp or self.is_orienteering or self.is_pctsp:
             if self.is_vrp:

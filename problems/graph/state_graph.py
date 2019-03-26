@@ -3,7 +3,7 @@ from typing import NamedTuple
 from utils.boolmask import mask_long2bool, mask_long_scatter
 
 
-class StateTSP(NamedTuple):
+class StateGraph(NamedTuple):
     # Fixed input
     loc: torch.Tensor
     dist: torch.Tensor
@@ -37,14 +37,14 @@ class StateTSP(NamedTuple):
                 lengths=self.lengths[key],
                 cur_coord=self.cur_coord[key] if self.cur_coord is not None else None,
             )
-        return super(StateTSP, self).__getitem__(key)
+        return super(StateGraph, self).__getitem__(key)
 
     @staticmethod
     def initialize(loc, visited_dtype=torch.uint8):
 
         batch_size, n_loc, _ = loc.size()
         prev_a = torch.zeros(batch_size, 1, dtype=torch.long, device=loc.device)
-        return StateTSP(
+        return StateGraph(
             loc=loc,
             dist=(loc[:, :, None, :] - loc[:, None, :, :]).norm(p=2, dim=-1),
             ids=torch.arange(batch_size, dtype=torch.int64, device=loc.device)[:, None],  # Add steps dimension
