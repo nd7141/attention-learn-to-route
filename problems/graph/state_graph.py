@@ -1,23 +1,21 @@
 import torch
+import numpy as np
 from typing import NamedTuple
+import networkx as nx
 from utils.boolmask import mask_long2bool, mask_long_scatter
 
 
 class StateGraph(NamedTuple):
-    # Fixed input
-    loc: torch.Tensor
-    dist: torch.Tensor
+    graph: nx.Graph
+    valids: torch.Tensor
 
     # If this state contains multiple copies (i.e. beam search) for the same instance, then for memory efficiency
-    # the loc and dist tensors are not kept multiple times, so we need to use the ids to index the correct rows.
+    # the coords and prizes tensors are not kept multiple times, so we need to use the ids to index the correct rows.
     ids: torch.Tensor  # Keeps track of original fixed data index of rows
 
     # State
-    first_a: torch.Tensor
     prev_a: torch.Tensor
     visited_: torch.Tensor  # Keeps track of nodes that have been visited
-    lengths: torch.Tensor
-    cur_coord: torch.Tensor
     i: torch.Tensor  # Keeps track of step
 
     @property
@@ -25,110 +23,124 @@ class StateGraph(NamedTuple):
         if self.visited_.dtype == torch.uint8:
             return self.visited_
         else:
-            return mask_long2bool(self.visited_, n=self.loc.size(-2))
+            return mask_long2bool(self.visited_, n=self.coords.size(-2))
+
+    @property
+    def dist(self):
+        return (self.coords[:, :, None, :] - self.coords[:, None, :, :]).norm(p=2, dim=-1)
 
     def __getitem__(self, key):
         if torch.is_tensor(key) or isinstance(key, slice):  # If tensor, idx all tensors by this tensor:
             return self._replace(
                 ids=self.ids[key],
-                first_a=self.first_a[key],
                 prev_a=self.prev_a[key],
                 visited_=self.visited_[key],
-                lengths=self.lengths[key],
-                cur_coord=self.cur_coord[key] if self.cur_coord is not None else None,
             )
         return super(StateGraph, self).__getitem__(key)
 
-    @staticmethod
-    def initialize(loc, visited_dtype=torch.uint8):
+    # Warning: cannot override len of NamedTuple, len should be number of fields, not batch size
+    # def __len__(self):
+    #     return len(self.used_capacity)
 
-        batch_size, n_loc, _ = loc.size()
-        prev_a = torch.zeros(batch_size, 1, dtype=torch.long, device=loc.device)
+    @staticmethod
+    def initialize(input, visited_dtype=torch.uint8):
+
+        batch_size = len(input)
+        n_loc= len(input[0])
+
+        # compute valid nodes
+        # Mask of size (batch_size, n_loc, n_loc)
+
+        valids = np.ones((batch_size, n_loc, n_loc))
+
+        for i, g in enumerate(input):
+            for j in list(g.nodes):
+                for k in list(g.neighbors(j)):
+                    valids[i, j, k] = 0
+
+
         return StateGraph(
-            loc=loc,
-            dist=(loc[:, :, None, :] - loc[:, None, :, :]).norm(p=2, dim=-1),
+            graph=graph,
+            valids=torch.tensor(valids, dtype=torch.uint8, device=loc.device),
             ids=torch.arange(batch_size, dtype=torch.int64, device=loc.device)[:, None],  # Add steps dimension
-            first_a=prev_a,
-            prev_a=prev_a,
-            # Keep visited with depot so we can scatter efficiently (if there is an action for depot)
+            prev_a=torch.zeros(batch_size, 1, dtype=torch.long, device=loc.device),
             visited_=(  # Visited as mask is easier to understand, as long more memory efficient
+                # Keep visited_ with depot so we can scatter efficiently (if there is an action for depot)
                 torch.zeros(
                     batch_size, 1, n_loc,
                     dtype=torch.uint8, device=loc.device
                 )
                 if visited_dtype == torch.uint8
-                else torch.zeros(batch_size, 1, (n_loc + 63) // 64, dtype=torch.int64, device=loc.device)  # Ceil
+                else torch.zeros(batch_size, 1, (n_loc + 1 + 63) // 64, dtype=torch.int64, device=loc.device)  # Ceil
             ),
-            lengths=torch.zeros(batch_size, 1, device=loc.device),
-            cur_coord=None,
             i=torch.zeros(1, dtype=torch.int64, device=loc.device)  # Vector with length num_steps
         )
 
-    def get_final_cost(self):
-
-        assert self.all_finished()
-        # assert self.visited_.
-
-        return self.lengths + (self.loc[self.ids, self.first_a, :] - self.cur_coord).norm(p=2, dim=-1)
-
     def update(self, selected):
 
+        assert self.i.size(0) == 1, "Can only update if state represents single step"
+
         # Update the state
-        prev_a = selected[:, None]  # Add dimension for step
+        selected = selected[:, None]  # Add dimension for step
+        prev_a = selected
 
         # Add the length
-        # cur_coord = self.loc.gather(
-        #     1,
-        #     selected[:, None, None].expand(selected.size(0), 1, self.loc.size(-1))
-        # )[:, 0, :]
-        cur_coord = self.loc[self.ids, prev_a]
-        lengths = self.lengths
-        if self.cur_coord is not None:  # Don't add length for first action (selection of start node)
-            lengths = self.lengths + (cur_coord - self.cur_coord).norm(p=2, dim=-1)  # (batch_dim, 1)
+        # cur_coord = self.coords[self.ids, selected]
+        # lengths = self.lengths + (cur_coord - self.cur_coord).norm(p=2, dim=-1)  # (batch_dim, 1)
 
-        # Update should only be called with just 1 parallel step, in which case we can check this way if we should update
-        first_a = prev_a if self.i.item() == 0 else self.first_a
+        # Add the collected prize
+        # cur_total_prize = self.cur_total_prize + self.prize[self.ids, selected]
 
         if self.visited_.dtype == torch.uint8:
+            # Note: here we do not subtract one as we have to scatter so the first column allows scattering depot
             # Add one dimension since we write a single value
             visited_ = self.visited_.scatter(-1, prev_a[:, :, None], 1)
         else:
-            visited_ = mask_long_scatter(self.visited_, prev_a)
+            # This works, by check_unset=False it is allowed to set the depot visited a second a time
+            visited_ = mask_long_scatter(self.visited_, prev_a, check_unset=False)
 
-        return self._replace(first_a=first_a, prev_a=prev_a, visited_=visited_,
-                             lengths=lengths, cur_coord=cur_coord, i=self.i + 1)
+        return self._replace(
+            prev_a=prev_a, visited_=visited_, i=self.i + 1
+        )
 
     def all_finished(self):
-        # Exactly n steps
-        return self.i.item() >= self.loc.size(-2)
+        # All must be returned to depot (and at least 1 step since at start also prev_a == 0)
+        # This is more efficient than checking the mask
+        return self.i.item() > 0
+        # return self.visited[:, :, 0].all()  # If we have visited the depot we're done
 
     def get_current_node(self):
+        """
+        Returns the current node where 0 is depot, 1...n are nodes
+        :return: (batch_size, num_steps) tensor with current nodes
+        """
         return self.prev_a
 
     def get_mask(self):
-        return self.visited
+        """
+        Gets a (batch_size, n_loc + 1) mask with the feasible actions (0 = depot), depends on already visited and
+        remaining capacity. 0 = feasible, 1 = infeasible
+        Forbids to visit depot twice in a row, unless all nodes have been visited
+        :return:
+        """
 
-    def get_nn(self, k=None):
-        # Insert step dimension
-        # Nodes already visited get inf so they do not make it
-        if k is None:
-            k = self.loc.size(-2) - self.i.item()  # Number of remaining
-        return (self.dist[self.ids, :, :] + self.visited.float()[:, :, None, :] * 1e6).topk(k, dim=-1, largest=False)[1]
+        # Note: this always allows going to the depot, but that should always be suboptimal so be ok
+        # Cannot visit if already visited or if length that would be upon arrival is too large to return to depot
+        # If the depot has already been visited then we cannot visit anymore
+        visited_ = self.visited
 
-    def get_nn_current(self, k=None):
-        assert False, "Currently not implemented, look into which neighbours to use in step 0?"
-        # Note: if this is called in step 0, it will have k nearest neighbours to node 0, which may not be desired
-        # so it is probably better to use k = None in the first iteration
-        if k is None:
-            k = self.loc.size(-2)
-        k = min(k, self.loc.size(-2) - self.i.item())  # Number of remaining
-        return (
-            self.dist[
-                self.ids,
-                self.prev_a
-            ] +
-            self.visited.float() * 1e6
-        ).topk(k, dim=-1, largest=False)[1]
+        # Get mask for neighbours
+
+        curr_node = self.get_current_node().view(-1)
+
+        valids_mask = torch.cat([torch.index_select(a, 0, i) for a, i in zip(self.valids, curr_node)])[:, None]
+
+        mask = (
+                visited_ | valids_mask
+
+        )
+
+        return mask
 
     def construct_solutions(self, actions):
         return actions

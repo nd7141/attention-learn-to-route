@@ -98,13 +98,14 @@ class AttentionModel(nn.Module):
             assert problem.NAME == "tsp", "Unsupported problem: {}".format(problem.NAME)
             step_context_dim = 2 * embedding_dim  # Embedding of first and last node
             node_dim = 2  # x, y
-        else: # graph
-            step_context_dim = embedding_dim
-            node_dim = 1 # node number for now (TO DO: parametrize later)
             
             # Learned input symbols for first action
             self.W_placeholder = nn.Parameter(torch.Tensor(2 * embedding_dim))
             self.W_placeholder.data.uniform_(-1, 1)  # Placeholder should be in range of activations
+
+        else:  # graph
+            step_context_dim = embedding_dim
+            node_dim = 1  # node number for now (TO DO: parametrize later)
 
         self.init_embed = nn.Linear(node_dim, embedding_dim)
 
@@ -142,7 +143,6 @@ class AttentionModel(nn.Module):
             embeddings, _ = self.embedder(self._init_embed(input))
 
         _log_p, pi = self._inner(input, embeddings)
-
         cost, mask = self.problem.get_costs(input, pi)
         # Log likelyhood is calculated within the model since returning it per action does not work well with
         # DataParallel since sequences can be of different lengths
@@ -207,7 +207,8 @@ class AttentionModel(nn.Module):
 
     def _init_embed(self, input):
 
-        # For graph just call self.init_embed(input)
+        if self.is_graph:
+            input = torch.FloatTensor([list(graph.node) for graph in input]).unsqueeze(-1).to(device)
 
         if self.is_vrp or self.is_orienteering or self.is_pctsp:
             if self.is_vrp:
@@ -277,9 +278,7 @@ class AttentionModel(nn.Module):
             # Collect output of step
             outputs.append(log_p[:, 0, :])
             sequences.append(selected)
-
             i += 1
-
         # Collected lists, return Tensor
         return torch.stack(outputs, 1), torch.stack(sequences, 1)
 

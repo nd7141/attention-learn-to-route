@@ -11,18 +11,20 @@ class Graph(object):
     NAME = 'graph'
 
     @staticmethod
-    def get_costs(dataset, pi):
+    def get_costs(pi):
         # Check that tours are valid, i.e. contain 0 to n -1
-        assert (
-            torch.arange(pi.size(1), out=pi.data.new()).view(1, -1).expand_as(pi) ==
-            pi.data.sort(1)[0]
-        ).all(), "Invalid tour"
+        # assert (
+        #     torch.arange(pi.size(1), out=pi.data.new()).view(1, -1).expand_as(pi) ==
+        #     pi.data.sort(1)[0]
+        # ).all(), "Invalid tour"
 
-        # Gather dataset in order of tour
-        d = dataset.gather(1, pi.unsqueeze(-1).expand_as(dataset))
+        # # Gather dataset in order of tour
+        # d = dataset.gather(1, pi.unsqueeze(-1).expand_as(dataset))
 
         # Length is distance (L2-norm of difference) from each next location from its prev and of last from first
-        return (d[:, 1:] - d[:, :-1]).norm(p=2, dim=2).sum(1) + (d[:, 0] - d[:, -1]).norm(p=2, dim=1), None
+
+        # Assume padding with zero in the end
+        return (pi > 0).sum(dim=1), None
 
     @staticmethod
     def make_dataset(*args, **kwargs):
@@ -32,6 +34,8 @@ class Graph(object):
     def make_state(*args, **kwargs):
         return StateGraph.initialize(*args, **kwargs)
 
+
+    # leave as legacy
     @staticmethod
     def beam_search(input, beam_size, expand_size=None,
                     compress_mask=False, model=None, max_calc_batch_size=4096):
@@ -54,9 +58,13 @@ class Graph(object):
 
 class GraphDataset(Dataset):
 
-    # Create dataset as a set of networkx graphs
+    # Create dataset from networkx graphs as dict
+    # valids -> tensor of valids
+    # nodes -> tensor of nodes
+    # inti_node -> tensor
+
     
-    def __init__(self, filename=None, size=50, num_samples=1000000, offset=0, distribution=None):
+    def __init__(self, type=None, filename=None, size=50, num_samples=1000000):
         super(GraphDataset, self).__init__()
 
         self.data_set = []
@@ -67,8 +75,8 @@ class GraphDataset(Dataset):
                 data = pickle.load(f)
                 self.data = [torch.FloatTensor(row) for row in (data[offset:offset+num_samples])]
         else:
-            # Sample points randomly in [0, 1] square
-            self.data = [torch.FloatTensor(size, 2).uniform_(0, 1) for i in range(num_samples)]
+            # Generate graph on the fly
+            self.data = [generate_graph(type, size) for i in range(num_samples)]
 
         self.size = len(self.data)
 
@@ -77,3 +85,6 @@ class GraphDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.data[idx]
+
+def generate_graph(type=None, size=None):
+    # TO DO
