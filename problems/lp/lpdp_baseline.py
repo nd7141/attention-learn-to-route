@@ -25,7 +25,7 @@ def extract_lpdp(fn="KaLPv2.0.tar.gz"):
     check_call(["tar", "xvfz", fn], cwd=cwd)
 
 def install_dependencies():
-    cwd = os.path.abspath(os.path.join("problems", "lp", "lpdp"))
+    cwd = os.path.abspath(os.path.join("lpdp"))
     os.makedirs(cwd, exist_ok=True)
 
     argtable2_url = "http://prdownloads.sourceforge.net/argtable/argtable2-13.tar.gz"
@@ -69,6 +69,15 @@ def install_dependencies():
         check_call(["python", scons + 'setup.py', "install",
                     "--prefix", scons_install])
         assert os.path.exists(scons_install), "Scons didn't install properly"
+
+def update_environ():
+    cwd = os.path.abspath(os.path.join("lpdp"))
+
+    os.environ['LD_LIBRARY_PATH'] += f"{cwd}/argtable2/lib:$HOME/argtable2/lib/libargtable2.so.0"
+    # if path has different name, then update the line below
+    # (it depends on the version of the tbb; should end with release)
+    os.environ['LD_LIBRARY_PATH'] += f"{cwd}/tbb/build/linux_intel64_gcc_cc5.4.0_libc2.23_kernel4.15.0_release"
+    os.environ['PATH'] += f"{cwd}/scons/bin/"
 
 
 
