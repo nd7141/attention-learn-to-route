@@ -33,16 +33,23 @@ def install_dependencies():
     scons_url = "http://prdownloads.sourceforge.net/scons/scons-3.0.5.tar.gz"
 
     print('Installing argtable2 locally...')
-    argtable2=os.path.join(cwd, 'argtable2')
-    if not os.path.isdir(argtable2):
-        check_call(["wget", argtable2_url], cwd=cwd)
+    argtable2_download=os.path.join(cwd, 'argtable2-download')
+    argtable2 = os.path.join(cwd, 'argtable2')
+    if not os.path.isdir(argtable2_download):
         argtable2_fn = os.path.join(cwd, os.path.split(urlparse(argtable2_url).path)[-1])
-        assert os.path.isfile(argtable2_fn), "Download failed, {} does not exist".format(argtable2_fn)
-        check_call([f"mkdir {argtable2} && tar xvfz {argtable2_fn} -C {argtable2} --strip-components 1"], 
-                   cwd=cwd,
+        if not os.path.isfile(argtable2_fn):
+            check_call([f"wget {argtable2_url}"], cwd=cwd, shell=True)
+            assert os.path.isfile(argtable2_fn), "Download failed, {} does not exist".format(argtable2_fn)
+
+        check_call([f"mkdir {argtable2_download}",
+                    f"tar xvfz {argtable2_fn} -C {argtable2_download} --strip-components 1"],
+                   # cwd=cwd,
+                   shell=True)
+        check_call([f"mkdir {argtable2} && ./configure -prefix {argtable2}",
+                    "make && make install && make clean"],
                    shell=True)
 
-    assert os.path.exists(argtable2), "Argtable2 didn't install properly"
+    assert os.path.isdir(argtable2), "Argtable2 didn't install properly"
 
     print('Installing tbb locally...')
     tbb = os.path.join(cwd, 'tbb')
