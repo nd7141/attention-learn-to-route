@@ -41,11 +41,12 @@ def install_dependencies():
             check_call([f"wget {argtable2_url}"], cwd=cwd, shell=True)
             assert os.path.isfile(argtable2_fn), "Download failed, {} does not exist".format(argtable2_fn)
 
-        check_call([f"mkdir {argtable2_download}",
-                    f"tar xvfz {argtable2_fn} -C {argtable2_download} --strip-components 1"],
+        os.makedirs(argtable2_download, exist_ok=True)
+        check_call([f"tar xvfz {argtable2_fn} -C {argtable2_download} --strip-components 1"],
                    # cwd=cwd,
                    shell=True)
-        check_call([f"mkdir {argtable2} && ./configure -prefix {argtable2}",
+        os.makedirs(argtable2, exist_ok=True)
+        check_call([f"./configure --prefix {argtable2}",
                     "make && make install && make clean"],
                    shell=True)
 
