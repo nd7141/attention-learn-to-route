@@ -54,6 +54,9 @@ def install_dependencies():
                     "--one-top-level", tbb,
                     "--strip-components", "1"], cwd=cwd)
 
+        check_call(["cd", tbb, "|",
+                    "make"])
+
     assert os.path.exists(tbb), "TBB didn't install properly"
 
     print('Installing scons locally...')
