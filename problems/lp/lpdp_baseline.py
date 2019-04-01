@@ -38,9 +38,9 @@ def install_dependencies():
         check_call(["wget", argtable2_url], cwd=cwd)
         argtable2_fn = os.path.join(cwd, os.path.split(urlparse(argtable2_url).path)[-1])
         assert os.path.isfile(argtable2_fn), "Download failed, {} does not exist".format(argtable2_fn)
-        check_call(["tar", "xvfz", argtable2_fn,
-                    "--one-top-level", argtable2,
-                    "--strip-components", "1"], cwd=cwd)
+        check_call([f"mkdir {argtable2} && tar xvfz {argtable2_fn} -C {argtable2} --strip-components 1"], 
+                   cwd=cwd,
+                   shell=True)
 
     assert os.path.exists(argtable2), "Argtable2 didn't install properly"
 
