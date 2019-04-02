@@ -33,19 +33,23 @@ def install_argtable2(cwd = "lpdp",
     print('Installing argtable2 locally...')
     argtable2_download = os.path.join(cwd, 'argtable2-download')
     argtable2 = os.path.join(cwd, 'argtable2')
-    if not os.path.isdir(argtable2_download):
+    if not os.path.isdir(argtable2):
         try:
+            # downloading...
             argtable2_fn = os.path.join(cwd, os.path.split(urlparse(argtable2_url).path)[-1])
             if not os.path.isfile(argtable2_fn):
                 check_call([f"wget {argtable2_url}"], cwd=cwd, shell=True)
                 assert os.path.isfile(argtable2_fn), "Download failed, {} does not exist".format(argtable2_fn)
-
             os.makedirs(argtable2_download, exist_ok=True)
             check_call([f"tar xvfz {argtable2_fn} -C {argtable2_download} --strip-components 1"], shell=True)
             os.makedirs(argtable2, exist_ok=True)
+
+            # installing...
             check_call(f"cd {argtable2_download} && ./configure --prefix={argtable2}", shell=True)
             check_call(f"cd {argtable2_download} && make && make install && make clean", shell=True)
-            check_call(f"rm -rf {argtable2_download} {argtable2_fn}", shell=True)
+
+            # cleaning...
+            # check_call(f"rm -rf {argtable2_download} {argtable2_fn}", shell=True)
         except Exception as e:
             print("Installation failed. Cleaning directories...")
             # check_call(f'rm -rf {cwd}/argtable2*', shell=True)
@@ -66,31 +70,39 @@ def install_dependencies():
     print('Installing tbb locally...')
     tbb = os.path.join(cwd, 'tbb')
     if not os.path.isdir(tbb):
-        check_call(["wget", tbb_url], cwd=cwd)
+        # downloading...
         tbb_fn = os.path.join(cwd, os.path.split(urlparse(tbb_url).path)[-1])
-        assert os.path.isfile(tbb_fn), "Download failed, {} does not exist".format(tbb_fn)
-        check_call(["tar", "xvfz", tbb_fn,
-                    "--one-top-level", tbb,
-                    "--strip-components", "1"], cwd=cwd)
+        if not os.path.isfile(tbb_fn):
+            check_call(f"wget {tbb_url}", cwd=cwd, shell=True)
+            assert os.path.isfile(tbb_fn), "Download failed, {} does not exist".format(tbb_fn)
+        check_call(f"tar xvfz {tbb_fn} -C {tbb} --strip-components 1", shell=True)
 
-        check_call(["cd", tbb, "|",
-                    "make"])
+        # installing
+        check_call(f"cd {tbb} && make", shell=True)
+
+        # cleaning
+        # check_call(f"rm -rf {tbb_fn}", shell=True)
 
     assert os.path.exists(tbb), "TBB didn't install properly"
 
     print('Installing scons locally...')
-    scons = os.path.join(cwd, 'scons-download')
-    scons_install = os.path.join(cwd, 'scons-install')
-    if not os.path.isdir(scons_install):
-        check_call(["wget", scons_url], cwd=cwd)
+    scons_download = os.path.join(cwd, 'scons-download')
+    scons = os.path.join(cwd, 'scons')
+    if not os.path.isdir(scons):
+        # downloading...
         scons_fn = os.path.join(cwd, os.path.split(urlparse(scons_url).path)[-1])
-        assert os.path.isfile(scons_fn), "Download failed, {} does not exist".format(scons_fn)
-        check_call(["tar", "xvfz", scons_fn,
-                    "--one-top-level", scons,
-                    "--strip-components", "1"], cwd=cwd)
-        check_call(["python", scons + 'setup.py', "install",
-                    "--prefix", scons_install])
-        assert os.path.exists(scons_install), "Scons didn't install properly"
+        if not os.path.isfile(scons_fn):
+            check_call(f"wget {scons_url}", cwd=cwd, shell=True)
+            assert os.path.isfile(scons_fn), "Download failed, {} does not exist".format(tbb_fn)
+        check_call(f"tar xvfz {scons_fn} -C {scons_download} --strip-components 1", shell=True)
+
+        # installing
+        check_call(f"cd {scons_download} && python setup.py install --prefix={scons}")
+
+        # cleaning
+        # check_call(f"rm -rf {scons_download} {scons_fn}", shell=True)
+
+    assert os.path.exists(scons), "Scons didn't install properly"
 
 def update_environ():
     cwd = os.path.abspath(os.path.join("lpdp"))
