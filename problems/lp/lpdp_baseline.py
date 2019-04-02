@@ -30,10 +30,10 @@ def install_argtable2(cwd = "lpdp",
     cwd = os.path.abspath(os.path.join(cwd))
     os.makedirs(cwd, exist_ok=True)
 
-    print('Installing argtable2 locally...')
     argtable2_download = os.path.join(cwd, 'argtable2-download')
     argtable2 = os.path.join(cwd, 'argtable2')
     if not os.path.isdir(argtable2):
+        print('Installing argtable2 locally...')
         try:
             # downloading...
             argtable2_fn = os.path.join(cwd, os.path.split(urlparse(argtable2_url).path)[-1])
@@ -62,9 +62,9 @@ def install_tbb(cwd = "lpdp",
     cwd = os.path.abspath(os.path.join(cwd))
     os.makedirs(cwd, exist_ok=True)
 
-    print('Installing tbb locally...')
     tbb = os.path.join(cwd, 'tbb')
     if not os.path.isdir(tbb):
+        print('Installing tbb locally...')
         try:
             # downloading...
             tbb_fn = os.path.join(cwd, os.path.split(urlparse(tbb_url).path)[-1])
@@ -90,11 +90,11 @@ def install_scons(cwd = "lpdp",
                   scons_url="http://prdownloads.sourceforge.net/scons/scons-3.0.5.tar.gz"):
     cwd = os.path.abspath(os.path.join(cwd))
     os.makedirs(cwd, exist_ok=True)
-
-    print('Installing scons locally...')
+    
     scons_download = os.path.join(cwd, 'scons-download')
     scons = os.path.join(cwd, 'scons')
     if not os.path.isdir(scons):
+        print('Installing scons locally...')
         try:
             # downloading...
             scons_fn = os.path.join(cwd, os.path.split(urlparse(scons_url).path)[-1])
@@ -126,18 +126,23 @@ def install_dependencies():
 
 
 def update_environ():
+    from glob import glob
+    
     cwd = os.path.abspath(os.path.join("lpdp"))
 
-    os.environ['LD_LIBRARY_PATH'] += f"{cwd}/argtable2/lib:$HOME/argtable2/lib/libargtable2.so.0"
-    # if path has different name, then update the line below
-    # (it depends on the version of the tbb; should end with release)
-    os.environ['LD_LIBRARY_PATH'] += f"{cwd}/tbb/build/linux_intel64_gcc_cc5.4.0_libc2.23_kernel4.15.0_release"
-    os.environ['PATH'] += f"{cwd}/scons/bin/"
+    os.environ['LD_LIBRARY_PATH'] = os.environ.get('LD_LIBRARY_PATH', '') + \
+        f":{cwd}/argtable2/lib:{cwd}/argtable2/lib/libargtable2.so.0"
+    os.environ['LD_LIBRARY_PATH'] += ':' + glob(f"{cwd}/tbb/build/*_release")[0]
+    os.environ['PATH'] = os.environ.get('PATH', '') + f"{cwd}/scons/bin/"
 
 
 
 if __name__ == '__main__':
     install_dependencies()
+    
+    update_environ()
+    print(os.environ['LD_LIBRARY_PATH'])
+    print(os.environ['PATH'])
 
 #     parser = argparse.ArgumentParser()
 #     parser.add_argument("-f", help="Filename to run the algorithm")
