@@ -36,19 +36,22 @@ def install_dependencies():
     argtable2_download=os.path.join(cwd, 'argtable2-download')
     argtable2 = os.path.join(cwd, 'argtable2')
     if not os.path.isdir(argtable2_download):
-        argtable2_fn = os.path.join(cwd, os.path.split(urlparse(argtable2_url).path)[-1])
-        if not os.path.isfile(argtable2_fn):
-            check_call([f"wget {argtable2_url}"], cwd=cwd, shell=True)
-            assert os.path.isfile(argtable2_fn), "Download failed, {} does not exist".format(argtable2_fn)
+        try: 
+            argtable2_fn = os.path.join(cwd, os.path.split(urlparse(argtable2_url).path)[-1])
+            if not os.path.isfile(argtable2_fn):
+                check_call([f"wget {argtable2_url}"], cwd=cwd, shell=True)
+                assert os.path.isfile(argtable2_fn), "Download failed, {} does not exist".format(argtable2_fn)
 
-        os.makedirs(argtable2_download, exist_ok=True)
-        check_call([f"tar xvfz {argtable2_fn} -C {argtable2_download} --strip-components 1"],
-                   # cwd=cwd,
-                   shell=True)
-        os.makedirs(argtable2, exist_ok=True)
-        check_call([f"./configure --prefix {argtable2}",
-                    "make && make install && make clean"],
-                   shell=True)
+            os.makedirs(argtable2_download, exist_ok=True)
+            check_call([f"tar xvfz {argtable2_fn} -C {argtable2_download} --strip-components 1"], shell=True)
+            os.makedirs(argtable2, exist_ok=True)
+            check_call(f"cd {argtable2_download} && ./configure --prefix={argtable2}", shell=True)
+            check_call(f"cd {argtable2_download} && make && make install && make clean", shell=True)
+            check_call(f"rm -rf {argtable2_download} {argtable2_fn}", shell=True)
+        except Exception as e:
+            print("Installation failed. Cleaning directories...")
+            check_call(f'rm -rf {cwd}/argtable2*', shell=True)
+            raise e
 
     assert os.path.isdir(argtable2), "Argtable2 didn't install properly"
 
@@ -93,12 +96,14 @@ def update_environ():
 
 
 if __name__ == '__main__':
+    install_dependencies()
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-f", help="Filename to run the algorithm")
-    parser.add_argument("-s", type=str, help="Start vertex")
-    parser.add_argument("-t", type=str, help="End vertex")
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument("-f", help="Filename to run the algorithm")
+#     parser.add_argument("-s", type=str, help="Start vertex")
+#     parser.add_argument("-t", type=str, help="End vertex")
 
-    opts = parser.parse_args()
+#     opts = parser.parse_args()
 
-    run_kalp(opts.f, opts.s, opts.t)
+#     run_kalp(opts.f, opts.s, opts.t)
+    
