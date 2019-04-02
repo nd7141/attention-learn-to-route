@@ -24,19 +24,17 @@ def extract_lpdp(fn="KaLPv2.0.tar.gz"):
     assert os.path.isfile(fn), "Download failed, {} does not exist".format(fn)
     check_call(["tar", "xvfz", fn], cwd=cwd)
 
-def install_dependencies():
-    cwd = os.path.abspath(os.path.join("lpdp"))
+
+def install_argtable2(cwd = "lpdp",
+                      argtable2_url = "http://prdownloads.sourceforge.net/argtable/argtable2-13.tar.gz"):
+    cwd = os.path.abspath(os.path.join(cwd))
     os.makedirs(cwd, exist_ok=True)
 
-    argtable2_url = "http://prdownloads.sourceforge.net/argtable/argtable2-13.tar.gz"
-    tbb_url = "https://github.com/01org/tbb/archive/2019_U5.tar.gz"
-    scons_url = "http://prdownloads.sourceforge.net/scons/scons-3.0.5.tar.gz"
-
     print('Installing argtable2 locally...')
-    argtable2_download=os.path.join(cwd, 'argtable2-download')
+    argtable2_download = os.path.join(cwd, 'argtable2-download')
     argtable2 = os.path.join(cwd, 'argtable2')
     if not os.path.isdir(argtable2_download):
-        try: 
+        try:
             argtable2_fn = os.path.join(cwd, os.path.split(urlparse(argtable2_url).path)[-1])
             if not os.path.isfile(argtable2_fn):
                 check_call([f"wget {argtable2_url}"], cwd=cwd, shell=True)
@@ -50,10 +48,20 @@ def install_dependencies():
             check_call(f"rm -rf {argtable2_download} {argtable2_fn}", shell=True)
         except Exception as e:
             print("Installation failed. Cleaning directories...")
-            check_call(f'rm -rf {cwd}/argtable2*', shell=True)
+            # check_call(f'rm -rf {cwd}/argtable2*', shell=True)
             raise e
 
     assert os.path.isdir(argtable2), "Argtable2 didn't install properly"
+
+def install_dependencies():
+    cwd = os.path.abspath(os.path.join("lpdp"))
+    os.makedirs(cwd, exist_ok=True)
+
+
+    tbb_url = "https://github.com/01org/tbb/archive/2019_U5.tar.gz"
+    scons_url = "http://prdownloads.sourceforge.net/scons/scons-3.0.5.tar.gz"
+
+    install_argtable2()
 
     print('Installing tbb locally...')
     tbb = os.path.join(cwd, 'tbb')
