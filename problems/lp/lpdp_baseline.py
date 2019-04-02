@@ -57,15 +57,10 @@ def install_argtable2(cwd = "lpdp",
 
     assert os.path.isdir(argtable2), "Argtable2 didn't install properly"
 
-def install_dependencies():
-    cwd = os.path.abspath(os.path.join("lpdp"))
+def install_tbb(cwd = "lpdp",
+                tbb_url="https://github.com/01org/tbb/archive/2019_U5.tar.gz"):
+    cwd = os.path.abspath(os.path.join(cwd))
     os.makedirs(cwd, exist_ok=True)
-
-
-    tbb_url = "https://github.com/01org/tbb/archive/2019_U5.tar.gz"
-    scons_url = "http://prdownloads.sourceforge.net/scons/scons-3.0.5.tar.gz"
-
-    install_argtable2()
 
     print('Installing tbb locally...')
     tbb = os.path.join(cwd, 'tbb')
@@ -85,6 +80,18 @@ def install_dependencies():
         # check_call(f"rm -rf {tbb_fn}", shell=True)
 
     assert os.path.exists(tbb), "TBB didn't install properly"
+
+def install_dependencies():
+    cwd = os.path.abspath(os.path.join("lpdp"))
+    os.makedirs(cwd, exist_ok=True)
+
+
+
+    scons_url = "http://prdownloads.sourceforge.net/scons/scons-3.0.5.tar.gz"
+
+    # install_argtable2()
+    # install_tbb()
+
 
     print('Installing scons locally...')
     scons_download = os.path.join(cwd, 'scons-download')
