@@ -75,6 +75,7 @@ def install_dependencies():
         if not os.path.isfile(tbb_fn):
             check_call(f"wget {tbb_url}", cwd=cwd, shell=True)
             assert os.path.isfile(tbb_fn), "Download failed, {} does not exist".format(tbb_fn)
+        os.makedirs(tbb, exist_ok=True)
         check_call(f"tar xvfz {tbb_fn} -C {tbb} --strip-components 1", shell=True)
 
         # installing
@@ -94,6 +95,7 @@ def install_dependencies():
         if not os.path.isfile(scons_fn):
             check_call(f"wget {scons_url}", cwd=cwd, shell=True)
             assert os.path.isfile(scons_fn), "Download failed, {} does not exist".format(tbb_fn)
+        os.makedirs(scons_download, exist_ok=True)
         check_call(f"tar xvfz {scons_fn} -C {scons_download} --strip-components 1", shell=True)
 
         # installing
