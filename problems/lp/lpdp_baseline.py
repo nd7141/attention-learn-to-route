@@ -49,10 +49,10 @@ def install_argtable2(cwd = "lpdp",
             check_call(f"cd {argtable2_download} && make && make install && make clean", shell=True)
 
             # cleaning...
-            # check_call(f"rm -rf {argtable2_download} {argtable2_fn}", shell=True)
+            check_call(f"rm -rf {argtable2_download} {argtable2_fn}", shell=True)
         except Exception as e:
             print("Installation failed. Cleaning directories...")
-            # check_call(f'rm -rf {cwd}/argtable2*', shell=True)
+            check_call(f'rm -rf {cwd}/argtable2*', shell=True)
             raise e
 
     assert os.path.isdir(argtable2), "Argtable2 didn't install properly"
@@ -65,53 +65,65 @@ def install_tbb(cwd = "lpdp",
     print('Installing tbb locally...')
     tbb = os.path.join(cwd, 'tbb')
     if not os.path.isdir(tbb):
-        # downloading...
-        tbb_fn = os.path.join(cwd, os.path.split(urlparse(tbb_url).path)[-1])
-        if not os.path.isfile(tbb_fn):
-            check_call(f"wget {tbb_url}", cwd=cwd, shell=True)
-            assert os.path.isfile(tbb_fn), "Download failed, {} does not exist".format(tbb_fn)
-        os.makedirs(tbb, exist_ok=True)
-        check_call(f"tar xvfz {tbb_fn} -C {tbb} --strip-components 1", shell=True)
+        try:
+            # downloading...
+            tbb_fn = os.path.join(cwd, os.path.split(urlparse(tbb_url).path)[-1])
+            if not os.path.isfile(tbb_fn):
+                check_call(f"wget {tbb_url}", cwd=cwd, shell=True)
+                assert os.path.isfile(tbb_fn), "Download failed, {} does not exist".format(tbb_fn)
+            os.makedirs(tbb, exist_ok=True)
+            check_call(f"tar xvfz {tbb_fn} -C {tbb} --strip-components 1", shell=True)
 
-        # installing
-        check_call(f"cd {tbb} && make", shell=True)
+            # installing
+            check_call(f"cd {tbb} && make", shell=True)
 
-        # cleaning
-        # check_call(f"rm -rf {tbb_fn}", shell=True)
+            # cleaning
+            check_call(f"rm -rf {tbb_fn}", shell=True)
+        except Exception as e:
+            print("Installation failed. Cleaning directories...")
+            check_call(f'rm -rf {cwd}/tbb*', shell=True)
+            raise e
 
     assert os.path.exists(tbb), "TBB didn't install properly"
 
-def install_dependencies():
-    cwd = os.path.abspath(os.path.join("lpdp"))
+def install_scons(cwd = "lpdp",
+                  scons_url="http://prdownloads.sourceforge.net/scons/scons-3.0.5.tar.gz"):
+    cwd = os.path.abspath(os.path.join(cwd))
     os.makedirs(cwd, exist_ok=True)
-
-
-
-    scons_url = "http://prdownloads.sourceforge.net/scons/scons-3.0.5.tar.gz"
-
-    # install_argtable2()
-    # install_tbb()
-
 
     print('Installing scons locally...')
     scons_download = os.path.join(cwd, 'scons-download')
     scons = os.path.join(cwd, 'scons')
     if not os.path.isdir(scons):
-        # downloading...
-        scons_fn = os.path.join(cwd, os.path.split(urlparse(scons_url).path)[-1])
-        if not os.path.isfile(scons_fn):
-            check_call(f"wget {scons_url}", cwd=cwd, shell=True)
-            assert os.path.isfile(scons_fn), "Download failed, {} does not exist".format(tbb_fn)
-        os.makedirs(scons_download, exist_ok=True)
-        check_call(f"tar xvfz {scons_fn} -C {scons_download} --strip-components 1", shell=True)
+        try:
+            # downloading...
+            scons_fn = os.path.join(cwd, os.path.split(urlparse(scons_url).path)[-1])
+            if not os.path.isfile(scons_fn):
+                check_call(f"wget {scons_url}", cwd=cwd, shell=True)
+                assert os.path.isfile(scons_fn), "Download failed, {} does not exist".format(scons_fn)
+            os.makedirs(scons_download, exist_ok=True)
+            check_call(f"tar xvfz {scons_fn} -C {scons_download} --strip-components 1", shell=True)
 
-        # installing
-        check_call(f"cd {scons_download} && python setup.py install --prefix={scons}")
+            # installing
+            check_call(f"cd {scons_download} && python setup.py install --prefix={scons}", shell=True)
 
-        # cleaning
-        # check_call(f"rm -rf {scons_download} {scons_fn}", shell=True)
+            # cleaning
+            check_call(f"rm -rf {scons_download} {scons_fn}", shell=True)
+        except Exception as e:
+            print("Installation failed. Cleaning directories...")
+            check_call(f'rm -rf {cwd}/scons*', shell=True)
+            raise e
 
     assert os.path.exists(scons), "Scons didn't install properly"
+
+def install_dependencies():
+
+    install_argtable2()
+    install_tbb()
+    install_scons()
+
+
+
 
 def update_environ():
     cwd = os.path.abspath(os.path.join("lpdp"))
