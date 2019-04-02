@@ -9,7 +9,19 @@ def run_kalp(fn, start, end):
                         '--target_vertex', end])
     print(out)
 
-
+def download_kalp(cwd = "lpdp",
+                  kalp_url = "http://algo2.iti.kit.edu/schulz/software_releases/KaLPv2.0.tar.gz"):
+    kalp = os.path.join(cwd, 'kalp')
+    if not os.path.isdir(kalp):
+        kalp_fn = os.path.join(cwd, os.path.split(urlparse(kalp_url).path)[-1])
+        if not os.path.isfile(kalp_fn):
+            check_call([f"wget {kalp_url}"], cwd=cwd, shell=True)
+            assert os.path.isfile(kalp_fn), "Download failed, {} does not exist".format(kalp_fn)
+        os.makedirs(kalp, exist_ok=True)
+        check_call([f"tar xvfz {kalp_fn} -C {kalp} --strip-components 1"], shell=True)
+        os.makedirs(kalp, exist_ok=True)
+        
+    assert os.path.isdir(kalp), "Kalp didn't download properly"
 
 def extract_lpdp(fn="KaLPv2.0.tar.gz"):
 
@@ -140,9 +152,7 @@ def update_environ():
 if __name__ == '__main__':
     install_dependencies()
     
-    update_environ()
-    print(os.environ['LD_LIBRARY_PATH'])
-    print(os.environ['PATH'])
+    download_kalp()
 
 #     parser = argparse.ArgumentParser()
 #     parser.add_argument("-f", help="Filename to run the algorithm")
