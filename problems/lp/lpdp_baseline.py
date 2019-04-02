@@ -3,39 +3,8 @@ import argparse
 import os
 from subprocess import check_call
 from urllib.parse import urlparse
-
-def run_kalp(fn, start, end):
-    out = check_output(['KaLPv2.0/deploy/kalp', fn, '--start_vertex', start,
-                        '--target_vertex', end])
-    print(out)
-
-def download_kalp(cwd = "lpdp",
-                  kalp_url = "http://algo2.iti.kit.edu/schulz/software_releases/KaLPv2.0.tar.gz"):
-    kalp = os.path.join(cwd, 'kalp')
-    if not os.path.isdir(kalp):
-        kalp_fn = os.path.join(cwd, os.path.split(urlparse(kalp_url).path)[-1])
-        if not os.path.isfile(kalp_fn):
-            check_call([f"wget {kalp_url}"], cwd=cwd, shell=True)
-            assert os.path.isfile(kalp_fn), "Download failed, {} does not exist".format(kalp_fn)
-        os.makedirs(kalp, exist_ok=True)
-        check_call([f"tar xvfz {kalp_fn} -C {kalp} --strip-components 1"], shell=True)
-        os.makedirs(kalp, exist_ok=True)
-        
-    assert os.path.isdir(kalp), "Kalp didn't download properly"
-
-def extract_lpdp(fn="KaLPv2.0.tar.gz"):
-
-    cwd = os.path.abspath(os.path.join("problems", "lp", "lpdp"))
-    os.makedirs(cwd, exist_ok=True)
-
-    fn = os.path.join(cwd, fn)
-
-    if not os.path.isfile(fn):
-        check_call(["wget", "http://algo2.iti.kit.edu/schulz/software_releases/KaLPv2.0.tar.gz"], cwd=cwd)
-
-    assert os.path.isfile(fn), "Download failed, {} does not exist".format(fn)
-    check_call(["tar", "xvfz", fn], cwd=cwd)
-
+from glob import glob
+import time
 
 def install_argtable2(cwd = "lpdp",
                       argtable2_url = "http://prdownloads.sourceforge.net/argtable/argtable2-13.tar.gz"):
@@ -128,31 +97,151 @@ def install_scons(cwd = "lpdp",
 
     assert os.path.exists(scons), "Scons didn't install properly"
 
-def install_dependencies():
+def install_dependencies(cwd = "lpdp",
+                        argtable2_url = "http://prdownloads.sourceforge.net/argtable/argtable2-13.tar.gz",
+                        tbb_url="https://github.com/01org/tbb/archive/2019_U5.tar.gz",
+                        scons_url="http://prdownloads.sourceforge.net/scons/scons-3.0.5.tar.gz"):
 
-    install_argtable2()
-    install_tbb()
-    install_scons()
+    install_argtable2(cwd, argtable2_url)
+    install_tbb(cwd, tbb_url)
+    install_scons(cwd, scons_url)
 
-
-
-
-def update_environ():
-    from glob import glob
+def download_lpdp_datasets(cwd = "lpdp",
+                  lpdp_ds_url = "https://algo2.iti.kit.edu/schulz/lp_benchmark.tar.gz"):
+    cwd = os.path.abspath(os.path.join(cwd))
+    os.makedirs(cwd, exist_ok=True)
     
-    cwd = os.path.abspath(os.path.join("lpdp"))
+    lpdpds = os.path.join(cwd, 'lpdp_datasets')
+    if not os.path.isdir(lpdpds):
+        print('Downloading lpdp datasets locally...')
+        try:
+            # downloading...
+            lpdpds_fn = os.path.join(cwd, os.path.split(urlparse(lpdp_ds_url).path)[-1])
+            if not os.path.isfile(lpdpds_fn):
+                check_call(f"wget {lpdp_ds_url}", cwd=cwd, shell=True)
+                assert os.path.isfile(lpdpds_fn), "Download failed, {} does not exist".format(lpdpds_fn)
+            os.makedirs(lpdpds, exist_ok=True)
+            check_call(f"tar xvfz {lpdpds_fn} -C {lpdpds} --strip-components 1", shell=True)
+        except Exception as e:
+            print("Download dplp datasets failed.")
+            raise e
+    assert os.path.exists(lpdpds), "lpdp datasets didn't download properly"
+
+def download_kalp(cwd = "lpdp",
+                  kalp_url = "http://algo2.iti.kit.edu/schulz/software_releases/KaLPv2.0.tar.gz"):
+    cwd = os.path.abspath(os.path.join(cwd))
+    os.makedirs(cwd, exist_ok=True)
+    
+    kalp = os.path.join(cwd, 'kalp')
+    if not os.path.isdir(kalp):
+        kalp_fn = os.path.join(cwd, os.path.split(urlparse(kalp_url).path)[-1])
+        if not os.path.isfile(kalp_fn):
+            check_call([f"wget {kalp_url}"], cwd=cwd, shell=True)
+            assert os.path.isfile(kalp_fn), "Download failed, {} does not exist".format(kalp_fn)
+        os.makedirs(kalp, exist_ok=True)
+        check_call([f"tar xvfz {kalp_fn} -C {kalp} --strip-components 1"], shell=True)
+        os.makedirs(kalp, exist_ok=True)
+        
+    assert os.path.isdir(kalp), "Kalp didn't download properly"
+    
+def compile_kalp(cwd = "lpdp"):
+    cwd = os.path.abspath(os.path.join(cwd))
+    os.makedirs(cwd, exist_ok=True)
+    
+    kalp = os.path.join(cwd, 'kalp')
+    deploy = os.path.join(kalp, 'deploy')
+    
+    if not os.path.isdir(deploy):
+        check_call(f"2to3 -w SConstruct extern/KaHIP/SConstruct", cwd=kalp, shell=True)
+        check_call(f"cd {kalp} && ./compile.sh", shell=True)
+        
+    assert os.path.isdir(deploy), "Kalp didn't compile properly"
+    
+def update_environ(cwd = "lpdp"):
+    cwd = os.path.abspath(os.path.join(cwd))
+    
+    argtable2 = os.path.join(cwd, 'argtable2')
+    tbb = os.path.join(cwd, 'tbb')
+    scons = os.path.join(cwd, 'scons')
+    
+    assert os.path.isdir(argtable2) and os.path.isdir(tbb) and \
+            os.path.isdir(scons), "You should first install dependencies"
 
     os.environ['LD_LIBRARY_PATH'] = os.environ.get('LD_LIBRARY_PATH', '') + \
         f":{cwd}/argtable2/lib:{cwd}/argtable2/lib/libargtable2.so.0"
     os.environ['LD_LIBRARY_PATH'] += ':' + glob(f"{cwd}/tbb/build/*_release")[0]
-    os.environ['PATH'] = os.environ.get('PATH', '') + f"{cwd}/scons/bin/"
+    os.environ['PATH'] = os.environ.get('PATH', '') + f":{cwd}/scons/bin/"
 
 
+def run_kalp(graph_fn, start_vertex, target_vertex,
+             output_filename=None,
+             partition_configuration='eco',
+             cwd='lpdp',
+             results_filename=None):
+    
+    # installing dependencies if don't exist
+    cwd = os.path.abspath(os.path.join(cwd))
+    argtable2 = os.path.join(cwd, 'argtable2')
+    tbb = os.path.join(cwd, 'tbb')
+    scons = os.path.join(cwd, 'scons')
+    if not (os.path.isdir(argtable2) and os.path.isdir(tbb) and os.path.isdir(scons)):
+        print('Missing dependencies. Installing locally...')
+        time.sleep(3)
+        install_dependencies()
+        
+    # prepare kalp to run 
+    update_environ()
+    cwd = os.path.abspath(os.path.join(cwd))
+    os.makedirs(cwd, exist_ok=True)
+    
+    kalp = os.path.join(cwd, 'kalp')
+    deploy = os.path.join(kalp, 'deploy')
+    
+    if not os.path.isdir(kalp):
+        download_kalp()
+    if not os.path.isdir(deploy):
+        compile_kalp()
+    
+    # run kalp
+    cmd = f'''{deploy}/kalp {graph_fn} \
+            --start_vertex={start_vertex} \
+            --target_vertex={target_vertex} \
+            --partition_configuration={partition_configuration}'''
+    if output_filename:
+        cmd += f" --output_filename={output_filename}"
+    
+    graph = os.path.split(graph_fn)[-1]
+    print(f"{graph} {start_vertex} {target_vertex}")
+    
+    start = time.time()
+    out = check_output(cmd, shell=True)
+    end = time.time()
+
+    # write results to a file
+    if results_filename:
+        with open(results_filename, 'a+') as f:
+            length = -1
+            if os.path.isfile(output_filename):
+                length = int(check_output(f"wc -l {output_filename} | cut -d' ' -f1", shell=True))
+                check_call(f"rm {output_filename}", shell=True)
+            
+            f.write(f"{graph} {start_vertex} {target_vertex} {end-start} {length}\n")
+
+            
 
 if __name__ == '__main__':
-    install_dependencies()
     
-    download_kalp()
+    download_lpdp_datasets()
+    
+    cwd = os.path.abspath(os.path.join("lpdp"))
+    kalp = os.path.join(cwd, 'kalp')
+    graph_fn = f"{kalp}/examples/my.dimacs"
+    start_vertex = 0
+    for target_vertex in range(1, 25):
+        run_kalp(graph_fn, start_vertex, target_vertex, output_filename='test.txt',
+                results_filename='results.txt')
+    
+    
 
 #     parser = argparse.ArgumentParser()
 #     parser.add_argument("-f", help="Filename to run the algorithm")
