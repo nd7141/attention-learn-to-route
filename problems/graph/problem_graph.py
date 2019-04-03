@@ -2,8 +2,12 @@ from torch.utils.data import Dataset
 import torch
 import os
 import pickle
+import random
 from problems.graph.state_graph import StateGraph
 from utils.beam_search import beam_search
+from utils.generate_maze import make_maze
+from utils.generate_regular import generate_regular_graphs
+from utils.functions import get_valids
 
 
 class Graph(object):
@@ -58,25 +62,30 @@ class Graph(object):
 
 class GraphDataset(Dataset):
 
-    # Create dataset from networkx graphs as dict
-    # valids -> tensor of valids
-    # nodes -> tensor of nodes
-    # inti_node -> tensor
-
-    
-    def __init__(self, type=None, filename=None, size=50, num_samples=1000000):
+    def __init__(self, type="regular", filename=None, size=None,
+                 side=None, blocked=None, degree=3, num_samples=10000, distribution=None):
         super(GraphDataset, self).__init__()
 
         self.data_set = []
-        if filename is not None:
-            assert os.path.splitext(filename)[1] == '.pkl'
 
-            with open(filename, 'rb') as f:
-                data = pickle.load(f)
-                self.data = [torch.FloatTensor(row) for row in (data[offset:offset+num_samples])]
+        # if filename is not None:
+        #     assert os.path.splitext(filename)[1] == '.pkl'
+        #
+        #     with open(filename, 'rb') as f:
+        #         data = pickle.load(f)
+        #         self.data = [torch.FloatTensor(row) for row in (data[offset:offset+num_samples])]
+        # else:
+        #     # Generate graph on the fly
+        #     self.data = [generate_graph(type, size) for i in range(num_samples)]
+
+        if type == "maze":
+            mazes = [make_maze(side, blocked) for i in num_samples]
+            self.data = [generate_graph_instance(maze) for maze in mazes]
+        elif type == "regular":
+            graphs = generate_regular_graphs(num_samples, size, degree)
+            self.data = [generate_graph_instance(graph) for graph in graphs]
         else:
-            # Generate graph on the fly
-            self.data = [generate_graph(type, size) for i in range(num_samples)]
+            print("Unknown type!")
 
         self.size = len(self.data)
 
@@ -86,5 +95,12 @@ class GraphDataset(Dataset):
     def __getitem__(self, idx):
         return self.data[idx]
 
-def generate_graph(type=None, size=None):
-    # TO DO
+
+def generate_graph_instance(graph):
+    return {
+        "valids": torch.tensor(get_valids(graph), dtype=torch.uint8),
+        "nodes": torch.FloatTensor(list(graph.node)).unsqueeze(1),
+        "starts": torch.tensor(random.choice(list(graph.node)))
+    }
+
+

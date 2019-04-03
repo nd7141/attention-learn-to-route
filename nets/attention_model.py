@@ -104,6 +104,7 @@ class AttentionModel(nn.Module):
             self.W_placeholder.data.uniform_(-1, 1)  # Placeholder should be in range of activations
 
         else:  # graph
+            # Embedding of last node
             step_context_dim = embedding_dim
             node_dim = 1  # node number for now (TO DO: parametrize later)
 
@@ -136,7 +137,6 @@ class AttentionModel(nn.Module):
         using DataParallel as the results may be of different lengths on different GPUs
         :return:
         """
-
         if self.checkpoint_encoder:
             embeddings, _ = checkpoint(self.embedder, self._init_embed(input))
         else:
@@ -208,7 +208,7 @@ class AttentionModel(nn.Module):
     def _init_embed(self, input):
 
         if self.is_graph:
-            input = torch.FloatTensor([list(graph.node) for graph in input]).unsqueeze(-1).to(device)
+            return self.init_embed(input['nodes'])
 
         if self.is_vrp or self.is_orienteering or self.is_pctsp:
             if self.is_vrp:
@@ -218,6 +218,7 @@ class AttentionModel(nn.Module):
             else:
                 assert self.is_pctsp
                 features = ('deterministic_prize', 'penalty')
+                print(input['loc'], input['loc'].size())
             return torch.cat(
                 (
                     self.init_embed_depot(input['depot'])[:, None, :],
@@ -228,7 +229,6 @@ class AttentionModel(nn.Module):
                 ),
                 1
             )
-        # TSP
         return self.init_embed(input)
 
     def _inner(self, input, embeddings):
@@ -246,7 +246,6 @@ class AttentionModel(nn.Module):
         # Perform decoding steps
         i = 0
         while not (self.shrink_size is None and state.all_finished()):
-
             if self.shrink_size is not None:
                 unfinished = torch.nonzero(state.get_finished() == 0)
                 if len(unfinished) == 0:
@@ -412,7 +411,7 @@ class AttentionModel(nn.Module):
                     ),
                     -1
                 )
-        elif self.is_orienteering or self.is_pctsp:
+        elif self.is_orienteering or self.is_pctsp or self.is_graph:
             return torch.cat(
                 (
                     torch.gather(

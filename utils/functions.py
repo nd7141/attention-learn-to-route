@@ -11,7 +11,7 @@ import torch.nn.functional as F
 
 
 def load_problem(name):
-    from problems import TSP, CVRP, SDVRP, OP, PCTSPDet, PCTSPStoch
+    from problems import TSP, CVRP, SDVRP, OP, PCTSPDet, PCTSPStoch, Graph
     problem = {
         'tsp': TSP,
         'cvrp': CVRP,
@@ -19,6 +19,7 @@ def load_problem(name):
         'op': OP,
         'pctsp_det': PCTSPDet,
         'pctsp_stoch': PCTSPStoch,
+        'graph': Graph
     }.get(name, None)
     assert problem is not None, "Currently unsupported problem: {}!".format(name)
     return problem
@@ -207,3 +208,15 @@ def sample_many(inner_func, get_cost_func, input, batch_rep=1, iter_rep=1):
     minpis = pis[torch.arange(pis.size(0), out=argmincosts.new()), argmincosts]
 
     return minpis, mincosts
+
+
+def get_valids(graph):
+
+    n_nodes = len(graph)
+
+    valids = np.ones((n_nodes, n_nodes))
+
+    for j in list(graph.nodes):
+        for k in list(graph.neighbors(j)):
+            valids[j, k] = 0
+    return valids

@@ -132,6 +132,7 @@ class StateOP(NamedTuple):
         Returns the current node where 0 is depot, 1...n are nodes
         :return: (batch_size, num_steps) tensor with current nodes
         """
+        print(self.prev_a)
         return self.prev_a
 
     def get_mask(self):

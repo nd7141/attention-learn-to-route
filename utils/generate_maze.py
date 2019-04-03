@@ -1,8 +1,8 @@
 import networkx as nx
 import os
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
+# import matplotlib.pyplot as plt
+# import matplotlib.patches as patches
 import matplotlib.collections as coll
 
 
@@ -19,34 +19,34 @@ def read_maze(fn):
     return G, list(missing), sidelength
 
 
-def plot_maze(nrows=10, ncols=10, missing=[], figsize=(20, 20)):
-    wid = 1
-    hei = 1
-    inbetween = 0.1
-
-    xx = np.arange(0, ncols + 1, (wid + inbetween))
-    yy = np.arange(0, nrows + 1, (hei + inbetween))
-
-    fig = plt.figure()
-    ax = plt.subplot(111, aspect='equal')
-
-    plt.rcParams["figure.figsize"] = figsize
-
-    pat = []
-    num = 0
-    for xi in xx:
-        for yi in yy:
-            if num in missing:
-                sq = patches.Rectangle((xi, yi), wid, hei, fill=True, color='black')
-            else:
-                sq = patches.Rectangle((xi, yi), wid, hei, fill=True)
-            num += 1
-            ax.add_patch(sq)
-
-    ax.axis([0, ncols + 2, 0, nrows + 2])
-
-    plt.axis('off')
-    plt.show()
+# def plot_maze(nrows=10, ncols=10, missing=[], figsize=(20, 20)):
+#     wid = 1
+#     hei = 1
+#     inbetween = 0.1
+#
+#     xx = np.arange(0, ncols + 1, (wid + inbetween))
+#     yy = np.arange(0, nrows + 1, (hei + inbetween))
+#
+#     fig = plt.figure()
+#     ax = plt.subplot(111, aspect='equal')
+#
+#     plt.rcParams["figure.figsize"] = figsize
+#
+#     pat = []
+#     num = 0
+#     for xi in xx:
+#         for yi in yy:
+#             if num in missing:
+#                 sq = patches.Rectangle((xi, yi), wid, hei, fill=True, color='black')
+#             else:
+#                 sq = patches.Rectangle((xi, yi), wid, hei, fill=True)
+#             num += 1
+#             ax.add_patch(sq)
+#
+#     ax.axis([0, ncols + 2, 0, nrows + 2])
+#
+#     plt.axis('off')
+#     plt.show()
 
 
 def valid_index(x, y, side):

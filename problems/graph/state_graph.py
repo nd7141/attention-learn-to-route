@@ -1,12 +1,10 @@
 import torch
 import numpy as np
 from typing import NamedTuple
-import networkx as nx
 from utils.boolmask import mask_long2bool, mask_long_scatter
 
 
 class StateGraph(NamedTuple):
-    graph: nx.Graph
     valids: torch.Tensor
 
     # If this state contains multiple copies (i.e. beam search) for the same instance, then for memory efficiency
@@ -25,9 +23,9 @@ class StateGraph(NamedTuple):
         else:
             return mask_long2bool(self.visited_, n=self.coords.size(-2))
 
-    @property
-    def dist(self):
-        return (self.coords[:, :, None, :] - self.coords[:, None, :, :]).norm(p=2, dim=-1)
+    # @property
+    # def dist(self):
+    #     return (self.coords[:, :, None, :] - self.coords[:, None, :, :]).norm(p=2, dim=-1)
 
     def __getitem__(self, key):
         if torch.is_tensor(key) or isinstance(key, slice):  # If tensor, idx all tensors by this tensor:
@@ -45,35 +43,25 @@ class StateGraph(NamedTuple):
     @staticmethod
     def initialize(input, visited_dtype=torch.uint8):
 
-        batch_size = len(input)
-        n_loc= len(input[0])
-
-        # compute valid nodes
-        # Mask of size (batch_size, n_loc, n_loc)
-
-        valids = np.ones((batch_size, n_loc, n_loc))
-
-        for i, g in enumerate(input):
-            for j in list(g.nodes):
-                for k in list(g.neighbors(j)):
-                    valids[i, j, k] = 0
+        nodes = input['nodes']
+        batch_size, n_loc, _ = nodes.size()
+        prev_a = input['starts'][:, None]
 
 
         return StateGraph(
-            graph=graph,
-            valids=torch.tensor(valids, dtype=torch.uint8, device=loc.device),
-            ids=torch.arange(batch_size, dtype=torch.int64, device=loc.device)[:, None],  # Add steps dimension
-            prev_a=torch.zeros(batch_size, 1, dtype=torch.long, device=loc.device),
+            valids=input["valids"],
+            ids=torch.arange(batch_size, dtype=torch.int64, device=nodes.device)[:, None],  # Add steps dimension
+            prev_a=prev_a,
             visited_=(  # Visited as mask is easier to understand, as long more memory efficient
                 # Keep visited_ with depot so we can scatter efficiently (if there is an action for depot)
                 torch.zeros(
                     batch_size, 1, n_loc,
-                    dtype=torch.uint8, device=loc.device
+                    dtype=torch.uint8, device=nodes.device
                 )
                 if visited_dtype == torch.uint8
-                else torch.zeros(batch_size, 1, (n_loc + 1 + 63) // 64, dtype=torch.int64, device=loc.device)  # Ceil
+                else torch.zeros(batch_size, 1, (n_loc + 1 + 63) // 64, dtype=torch.int64, device=nodes.device)  # Ceil
             ),
-            i=torch.zeros(1, dtype=torch.int64, device=loc.device)  # Vector with length num_steps
+            i=torch.zeros(1, dtype=torch.int64, device=nodes.device)  # Vector with length num_steps
         )
 
     def update(self, selected):
