@@ -94,8 +94,19 @@ class StateGraph(NamedTuple):
     def all_finished(self):
         # All must be returned to depot (and at least 1 step since at start also prev_a == 0)
         # This is more efficient than checking the mask
-        return self.i.item() > 0
+        visited_ = self.visited
+        valids_mask = self.get_valids_mask()
+        mask = (
+                visited_ | valids_mask
+
+        )
+        return (mask == 0).sum() == 0
         # return self.visited[:, :, 0].all()  # If we have visited the depot we're done
+
+    def get_valids_mask(self):
+        valids_mask = torch.cat([torch.index_select(a, 0, i)
+                                 for a, i in zip(self.valids, self.get_current_node().view(-1))])[:, None]
+        return valids_mask
 
     def get_current_node(self):
         """
@@ -117,17 +128,16 @@ class StateGraph(NamedTuple):
         # If the depot has already been visited then we cannot visit anymore
         visited_ = self.visited
 
-        # Get mask for neighbours
-
-        curr_node = self.get_current_node().view(-1)
-
-        valids_mask = torch.cat([torch.index_select(a, 0, i) for a, i in zip(self.valids, curr_node)])[:, None]
+        valids_mask = self.get_valids_mask()
 
         mask = (
                 visited_ | valids_mask
 
         )
-
+        if (mask == 0).sum() == 0:
+            curr_node = self.get_current_node()
+            mask.scatter_(2, curr_node[:, None], 0)
+        print(mask)
         return mask
 
     def construct_solutions(self, actions):

@@ -15,7 +15,7 @@ class Graph(object):
     NAME = 'graph'
 
     @staticmethod
-    def get_costs(pi):
+    def get_costs(input, pi):
         # Check that tours are valid, i.e. contain 0 to n -1
         # assert (
         #     torch.arange(pi.size(1), out=pi.data.new()).view(1, -1).expand_as(pi) ==
@@ -28,7 +28,7 @@ class Graph(object):
         # Length is distance (L2-norm of difference) from each next location from its prev and of last from first
 
         # Assume padding with zero in the end
-        return (pi > 0).sum(dim=1), None
+        return (pi > 0).sum(dim=1).float(), None
 
     @staticmethod
     def make_dataset(*args, **kwargs):

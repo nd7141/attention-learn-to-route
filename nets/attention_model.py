@@ -143,6 +143,7 @@ class AttentionModel(nn.Module):
             embeddings, _ = self.embedder(self._init_embed(input))
 
         _log_p, pi = self._inner(input, embeddings)
+        print(pi)
         cost, mask = self.problem.get_costs(input, pi)
         # Log likelyhood is calculated within the model since returning it per action does not work well with
         # DataParallel since sequences can be of different lengths
@@ -273,7 +274,6 @@ class AttentionModel(nn.Module):
 
                 log_p[state.ids[:, 0]] = log_p_
                 selected[state.ids[:, 0]] = selected_
-
             # Collect output of step
             outputs.append(log_p[:, 0, :])
             sequences.append(selected)
@@ -364,6 +364,8 @@ class AttentionModel(nn.Module):
         # Compute logits (unnormalized log_p)
         log_p, glimpse = self._one_to_many_logits(query, glimpse_K, glimpse_V, logit_K, mask)
 
+        #print(log_p)
+
         if normalize:
             log_p = F.log_softmax(log_p / self.temp, dim=-1)
 
@@ -411,7 +413,20 @@ class AttentionModel(nn.Module):
                     ),
                     -1
                 )
-        elif self.is_orienteering or self.is_pctsp or self.is_graph:
+        elif self.is_graph:
+            return torch.cat(
+                (
+                    torch.gather(
+                        embeddings,
+                        1,
+                        current_node.contiguous()
+                            .view(batch_size, num_steps, 1)
+                            .expand(batch_size, num_steps, embeddings.size(-1))
+                    ).view(batch_size, num_steps, embeddings.size(-1)),
+                ),
+                -1
+            )
+        elif self.is_orienteering or self.is_pctsp:
             return torch.cat(
                 (
                     torch.gather(
