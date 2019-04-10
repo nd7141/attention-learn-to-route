@@ -156,6 +156,7 @@ class StateOP(NamedTuple):
         # Depot can always be visited
         # (so we do not hardcode knowledge that this is strictly suboptimal if other options are available)
         mask[:, :, 0] = 0
+        print(mask)
         return mask
 
     def construct_solutions(self, actions):

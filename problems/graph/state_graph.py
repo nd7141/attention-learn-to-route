@@ -100,6 +100,7 @@ class StateGraph(NamedTuple):
                 visited_ | valids_mask
 
         )
+        #print(mask)
         return (mask == 0).sum() == 0
         # return self.visited[:, :, 0].all()  # If we have visited the depot we're done
 
@@ -134,10 +135,11 @@ class StateGraph(NamedTuple):
                 visited_ | valids_mask
 
         )
-        if (mask == 0).sum() == 0:
+
+        # Always unmask the last node
+        if (mask == 0).sum() != 0:
             curr_node = self.get_current_node()
             mask.scatter_(2, curr_node[:, None], 0)
-        print(mask)
         return mask
 
     def construct_solutions(self, actions):

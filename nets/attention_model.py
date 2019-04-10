@@ -247,6 +247,7 @@ class AttentionModel(nn.Module):
         # Perform decoding steps
         i = 0
         while not (self.shrink_size is None and state.all_finished()):
+            print(i)
             if self.shrink_size is not None:
                 unfinished = torch.nonzero(state.get_finished() == 0)
                 if len(unfinished) == 0:
@@ -363,8 +364,6 @@ class AttentionModel(nn.Module):
 
         # Compute logits (unnormalized log_p)
         log_p, glimpse = self._one_to_many_logits(query, glimpse_K, glimpse_V, logit_K, mask)
-
-        #print(log_p)
 
         if normalize:
             log_p = F.log_softmax(log_p / self.temp, dim=-1)
