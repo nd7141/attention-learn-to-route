@@ -57,7 +57,7 @@ class StateGraph(NamedTuple):
                 torch.zeros(
                     batch_size, 1, n_loc,
                     dtype=torch.uint8, device=nodes.device
-                )
+                ).scatter(-1, prev_a[:, :, None], 1)
                 if visited_dtype == torch.uint8
                 else torch.zeros(batch_size, 1, (n_loc + 1 + 63) // 64, dtype=torch.int64, device=nodes.device)  # Ceil
             ),
@@ -92,15 +92,13 @@ class StateGraph(NamedTuple):
         )
 
     def all_finished(self):
-        # All must be returned to depot (and at least 1 step since at start also prev_a == 0)
-        # This is more efficient than checking the mask
+        # There should not be available nodes to visit for current nodes in a batch
         visited_ = self.visited
         valids_mask = self.get_valids_mask()
         mask = (
                 visited_ | valids_mask
 
         )
-        #print(mask)
         return (mask == 0).sum() == 0
         # return self.visited[:, :, 0].all()  # If we have visited the depot we're done
 
@@ -136,10 +134,12 @@ class StateGraph(NamedTuple):
 
         )
 
-        # Always unmask the last node
-        if (mask == 0).sum() != 0:
-            curr_node = self.get_current_node()
-            mask.scatter_(2, curr_node[:, None], 0)
+        # Calculate what graphs are finished and unmask last node for them
+
+        z = ((mask == 0).sum(dim=2) != 0)
+
+        curr_node = self.get_current_node()
+        mask.scatter_(2, curr_node[:, None], z[:, None])
         return mask
 
     def construct_solutions(self, actions):

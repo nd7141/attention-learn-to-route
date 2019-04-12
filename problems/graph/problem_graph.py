@@ -28,7 +28,8 @@ class Graph(object):
         # Length is distance (L2-norm of difference) from each next location from its prev and of last from first
 
         # Assume padding with zero in the end
-        return (pi > 0).sum(dim=1).float(), None
+        g = pi.roll(shifts=1, dims=1)
+        return (((pi - g) != 0).sum(dim = 1) - 1).float(), None
 
     @staticmethod
     def make_dataset(*args, **kwargs):
