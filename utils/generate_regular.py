@@ -173,6 +173,12 @@ def generate_regular_dataset(graph_dir, nv_range, ng_range, degree):
                 g_copy = relabel_graph(graphs[t])
                 nx.write_edgelist(g_copy, './regulars/regular_n{}_d{}_t{}_c{}.edgelist'.format(NV, D, t, c))
 
+def save_dimacs(graph, fn):
+    with open(fn, 'w+') as f:
+        f.write(f"p lp {graph.order()} {graph.size()}\n")
+        for u in graph:
+            for v in graph[u]:
+                f.write(f"a {u} {v} 1\n")
 
 if __name__ == '__main__':
 

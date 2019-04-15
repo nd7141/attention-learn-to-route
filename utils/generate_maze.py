@@ -79,9 +79,21 @@ def make_maze(side, blocked):
     G.remove_nodes_from(missing)
     return G, missing
 
+def save_dimacs(graph, fn):
+    with open(fn, 'w+') as f:
+        f.write(f"p lp {graph.order()} {graph.size()}\n")
+        for u in G:
+            for v in G[u]:
+                f.write(f"a {u} {v} 1\n")
+
+
+
+
 if __name__ == '__main__':
 
-    side = 10
+    side = 3
     blocked = 0.1
     G, missing = make_maze(side, blocked)
-    plot_maze(side, side, missing, figsize=(5, 5))
+    # plot_maze(side, side, missing, figsize=(5, 5))
+    print(G.edges())
+    save_dimacs(G, 'test.dimacs')
