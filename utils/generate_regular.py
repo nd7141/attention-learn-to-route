@@ -149,13 +149,13 @@ def relabel_graph(G):
     mapping = {nodes[i]: new_order[i] for i in range(len(new_order))}
     return nx.relabel_nodes(G, mapping)
 
-def generate_regular_dataset(graph_dir, nv_range, ng_range, degree):
+def generate_regular_dataset(graph_dir, nv_range, ng_range, degree, dimacs=False, copies=3):
     if not os.path.exists(graph_dir):
         os.mkdir(graph_dir)
     sizes = nv_range
     orders = ng_range
     D = degree
-    for ix in range(10):
+    for ix in range(len(orders)):
         print(ix)
         NG = orders[ix]
         NV = sizes[ix]
@@ -169,9 +169,12 @@ def generate_regular_dataset(graph_dir, nv_range, ng_range, degree):
                 raise Exception("Found iso graphs in random regular graphs {} {}.\nRepeat experiment.".format(NG, NV))
 
         for t in range(len(graphs)):
-            for c in range(5):
+            for c in range(copies):
                 g_copy = relabel_graph(graphs[t])
-                nx.write_edgelist(g_copy, './regulars/regular_n{}_d{}_t{}_c{}.edgelist'.format(NV, D, t, c))
+                if dimacs:
+                    save_dimacs(g_copy, './{}/regular_n{}_d{}_t{}_c{}.dimacs'.format(graph_dir, NV, D, t, c))
+                else:
+                    nx.write_edgelist(g_copy, './{}/regular_n{}_d{}_t{}_c{}.edgelist'.format(graph_dir, NV, D, t, c))
 
 def save_dimacs(graph, fn):
     with open(fn, 'w+') as f:
@@ -185,6 +188,7 @@ if __name__ == '__main__':
     NG = 1000 # number of graphs
     NV = 80 # number of vertices
     D = 3 # degree of vertices
+
 
     # graphs = generate_ER_graphs(NG, NV, prob=0.2, save_to_files=True, graph_dir='er_graphs_n70')
     # graphs = generate_regular_graphs(NG, NV, D, save_to_files=True, graph_dir='reg_graphs_n8_d3')
@@ -203,10 +207,12 @@ if __name__ == '__main__':
     # print(Counter(ls))
 
     # generate regular dataset
-    # D = 3
-    # sizes = list(range(10, 101, 10))
-    # orders = [5, 15, 20, 20, 20, 20, 20, 20, 20, 40]
-    # generate_regular_dataset('regulars/', sizes, orders, D)
+    D = 3
+    sizes = list(range(10, 101, 10))
+    orders = [5, 15, 20, 20, 20, 20, 20, 20, 20, 40]
+    orders = [10]*3
+    sizes = [20, 40, 80]
+    generate_regular_dataset('regulars/', sizes, orders, D, copies=1, dimacs=True)
 
 
     # generate_regular_graphs(10, NV, D, graph_dir='./reg_graphs_n80_d3/')
