@@ -4,6 +4,7 @@ from collections import Counter
 import numpy as np
 import random
 import pandas as pd
+from collections import defaultdict as ddict
 
 def replace(P, source, target):
     '''Replace last occurrence of source with source-target-source.'''
@@ -179,9 +180,39 @@ def generate_regular_dataset(graph_dir, nv_range, ng_range, degree, dimacs=False
 def save_dimacs(graph, fn):
     with open(fn, 'w+') as f:
         f.write(f"p lp {graph.order()} {graph.size()}\n")
+        mapping = ddict(int)
+        count = 1
         for u in graph:
+            if u not in mapping:
+                mapping[u] = count
+                count += 1
             for v in graph[u]:
-                f.write(f"a {u} {v} 1\n")
+                if v not in mapping:
+                    mapping[v] = count
+                    count += 1
+                f.write(f"a {mapping[u]} {mapping[v]} 1\n")
+
+def read_dimacs(fn):
+    G = nx.Graph()
+    with open(fn) as f:
+        first = next(f)
+        s, _, sn, sm = first.strip().split()
+        assert s == 'p', 'First line should start p'
+        for line in f:
+            _, u, v, w = line.strip().split()
+            G.add_edge(int(u), int(v))
+
+        assert G.order() == int(sn) and G.size() == int(sm), "Dimensions don't match"
+    return G
+
+def is_valid_path(path, graph):
+    assert len(set(path)) == len(path), "Error. Every vertex should be seen only once."
+
+    for ix in range(len(path)-1):
+        assert path[ix+1]+1 in graph[path[ix]+1], f"There is no neighbor {path[ix]} in {graph[path[ix-1]]} {path[ix-1]}"
+
+    print("Path is correct")
+
 
 if __name__ == '__main__':
 
@@ -189,6 +220,13 @@ if __name__ == '__main__':
     NV = 80 # number of vertices
     D = 3 # degree of vertices
 
+
+    with open('test.txt') as f:
+        path = list(map(int, f.readlines()))
+
+    graph = read_dimacs('regulars/regular_n20_d3_t9_c0.dimacs')
+    # print(graph.edges())
+    is_valid_path(path, graph)
 
     # graphs = generate_ER_graphs(NG, NV, prob=0.2, save_to_files=True, graph_dir='er_graphs_n70')
     # graphs = generate_regular_graphs(NG, NV, D, save_to_files=True, graph_dir='reg_graphs_n8_d3')
@@ -212,7 +250,7 @@ if __name__ == '__main__':
     orders = [5, 15, 20, 20, 20, 20, 20, 20, 20, 40]
     orders = [10]*3
     sizes = [20, 40, 80]
-    generate_regular_dataset('regulars/', sizes, orders, D, copies=1, dimacs=True)
+    # generate_regular_dataset('regulars/', sizes, orders, D, copies=1, dimacs=True)
 
 
     # generate_regular_graphs(10, NV, D, graph_dir='./reg_graphs_n80_d3/')
