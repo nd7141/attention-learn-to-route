@@ -159,6 +159,7 @@ def compile_kalp(cwd = "lpdp"):
 
 def install_kalp(cwd = "lpdp",
                   kalp_url = "http://algo2.iti.kit.edu/schulz/software_releases/KaLPv2.0.tar.gz"):
+    update_environ(cwd)
     download_kalp(cwd, kalp_url)
     compile_kalp(cwd)
     
@@ -241,10 +242,15 @@ if __name__ == '__main__':
 
     install_dependencies()
     install_kalp()
+
+    cwd = os.path.abspath(os.path.join("lpdp"))
+    kalp = os.path.join(cwd, 'kalp')
+    graph_fn = f"{kalp}/examples/Grid8x8.graph"
+    run_kalp(graph_fn, 0, 20, output_filename='test.txt', results_filename='results.txt')
     
     # cwd = os.path.abspath(os.path.join("lpdp"))
     # kalp = os.path.join(cwd, 'kalp')
-    # graph_fn = f"{kalp}/examples/my.dimacs"
+    # graph_fn = f"{kalp}/examples/Grid8x8.graph"
     # start_vertex = 0
     # import glob
     # N = 20
