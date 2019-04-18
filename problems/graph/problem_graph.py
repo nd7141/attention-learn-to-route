@@ -100,11 +100,19 @@ class GraphDataset(Dataset):
         return self.data[idx]
 
 
-def generate_graph_instance(graph):
+def generate_graph_instance(graph, mode="nodes"):
+
+    valids = torch.tensor(get_valids(graph), dtype=torch.uint8)
+    starts = torch.tensor(random.choice(list(graph.node)))
+    if mode == "nodes":
+        nodes = torch.FloatTensor(list(graph.node)).unsqueeze(1)
+    elif mode == "learnable":
+        nodes = torch.nn.Parameter(torch.Tensor(8, len(graph)))
+        nodes.data.uniform_(-1, 1)
     return {
-        "valids": torch.tensor(get_valids(graph), dtype=torch.uint8),
-        "nodes": torch.FloatTensor(list(graph.node)).unsqueeze(1),
-        "starts": torch.tensor(random.choice(list(graph.node)))
+        "valids": valids,
+        "nodes": nodes,
+        "starts": starts
     }
 
 
