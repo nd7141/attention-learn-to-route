@@ -68,6 +68,7 @@ class AttentionModel(nn.Module):
         self.is_pctsp = problem.NAME == 'pctsp'
         self.is_graph = problem.NAME == 'graph'
         self.is_tsp = problem.NAME == 'tsp'
+        self.is_lp = problem.NAME == 'lp'
 
         self.tanh_clipping = tanh_clipping
 
@@ -207,7 +208,7 @@ class AttentionModel(nn.Module):
 
     def _init_embed(self, input):
 
-        if self.is_graph:
+        if self.is_graph or self.is_lp:
             return self.init_embed(input['nodes'])
 
         if self.is_vrp or self.is_orienteering or self.is_pctsp:
