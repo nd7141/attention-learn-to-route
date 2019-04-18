@@ -220,3 +220,19 @@ def get_valids(graph):
         for k in list(graph.neighbors(j)):
             valids[j, k] = 0
     return valids
+
+
+def is_paths_valids(paths, valids):
+    is_valid = True
+    costs = []
+    for n, path in enumerate(paths):
+        cost = 0
+        valid = valids[n]
+        path_len = len(path)
+        for i in range(path_len-1):
+            if path[i] != path[i+1]:
+                cost += 1
+                if valid[path[i],path[i+1]] != 0:
+                    is_valid = False
+        costs.append(cost)
+    return is_valid, costs

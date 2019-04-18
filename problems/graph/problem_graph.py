@@ -7,7 +7,7 @@ from problems.graph.state_graph import StateGraph
 from utils.beam_search import beam_search
 from utils.generate_maze import make_maze
 from utils.generate_regular import generate_regular_graphs
-from utils.functions import get_valids
+from utils.functions import get_valids, is_paths_valids
 
 
 class Graph(object):
@@ -15,7 +15,7 @@ class Graph(object):
     NAME = 'graph'
 
     @staticmethod
-    def get_costs(input, pi):
+    def get_costs(input, pi, check_paths=True):
         # Check that tours are valid, i.e. contain 0 to n -1
         # assert (
         #     torch.arange(pi.size(1), out=pi.data.new()).view(1, -1).expand_as(pi) ==
@@ -26,10 +26,13 @@ class Graph(object):
         # d = dataset.gather(1, pi.unsqueeze(-1).expand_as(dataset))
 
         # Length is distance (L2-norm of difference) from each next location from its prev and of last from first
+        is_valid, costs = is_paths_valids(pi, input['valids'])
+        if check_paths:
+            print(is_valid)
 
-        # Assume padding with zero in the end
-        g = pi.roll(shifts=1, dims=1)
-        return (((pi - g) != 0).sum(dim = 1) - 1).float(), None
+        # g = pi.roll(shifts=1, dims=1)
+        # costs = -(((pi - g) != 0).sum(dim=1) - 1).float()
+        return -torch.FloatTensor(costs), None
 
     @staticmethod
     def make_dataset(*args, **kwargs):
