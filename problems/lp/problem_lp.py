@@ -79,11 +79,11 @@ class LPDataset(Dataset):
                 data = pickle.load(f)
                 self.data = [
                     {
-                        'valids': torch.FloatTensor(valids),
+                        'valids': torch.ByteTensor(valids),
                         'nodes': torch.FloatTensor(embeddings),
-                        'starts': torch.FloatTensor(start)
+                        'starts': torch.LongTensor(starts)
                     }
-                    for embeddings, valids, start in data[offset:offset + num_samples]]
+                    for embeddings, valids, starts in data[offset:offset + num_samples]]
         else:
             # Generate data with AW embeddings
             self.data = [generate_instance(size, degree, steps, awe_samples) for _ in range(num_samples)]

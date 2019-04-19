@@ -45,7 +45,7 @@ class StateLP(NamedTuple):
 
         nodes = input['nodes']
         batch_size, n_loc, _ = nodes.size()
-        prev_a = input['starts'].type(torch.LongTensor)
+        prev_a = input['starts']
 
         visited_ = torch.zeros(
             batch_size, 1, n_loc,
@@ -109,6 +109,7 @@ class StateLP(NamedTuple):
     def get_valids_mask(self):
         valids_mask = torch.cat([torch.index_select(a, 0, i)
                                  for a, i in zip(self.valids, self.get_current_node().view(-1))])[:, None]
+
         return valids_mask
 
     def get_current_node(self):
