@@ -107,9 +107,8 @@ class StateLP(NamedTuple):
         # return self.visited[:, :, 0].all()  # If we have visited the depot we're done
 
     def get_valids_mask(self):
-        valids_mask = torch.cat([torch.index_select(a, 0, i)
-                                 for a, i in zip(self.valids, self.get_current_node().view(-1))])[:, None]
-
+        N, _, _ = self.valids.size()
+        valids_mask = self.valids[np.arange(N), self.prev_a.squeeze().numpy()][:, None]
         return valids_mask
 
     def get_current_node(self):
