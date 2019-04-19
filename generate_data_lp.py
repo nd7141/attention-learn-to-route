@@ -7,6 +7,7 @@ import numpy as np
 import time
 from multiprocessing import Pool
 from functools import partial
+import time
 
 from utils.data_utils import check_extension, save_dataset
 
@@ -56,7 +57,7 @@ if __name__ == '__main__':
     parser.add_argument('--graph_sizes', type=int, nargs='+', default=[20],
                         help="Sizes of problem instances (default 20)")
     parser.add_argument('--degree', type=int, default=3, help="Degree of regular graph")
-    parser.add_argument('--steps', type=int, default=3, help="Number of steps in AW")
+    parser.add_argument('--awe_steps', type=int, default=3, help="Number of steps in AW")
     parser.add_argument('--awe_samples', type=int, default=100, help="Number of samples for AW embeddings")
     parser.add_argument("-f", action='store_true', help="Set true to overwrite")
     parser.add_argument('--seed', type=int, default=1234, help="Random seed")
@@ -65,19 +66,16 @@ if __name__ == '__main__':
 
     # multiprocessing version
     # pool = Pool(None)
-    # f = partial(_get_embeddings_and_valids, steps=steps, samples=samples)
+    # f = partial(_get_embeddings_and_valids, steps=opts.steps, samples=opts.samples)
+    # graph_size = opts.graph_sizes[0]
     # start = time.time()
-    # data = pool.map(f, [make_regular_graph(degree, graph_size) for _ in range(dataset_size)])
-    # print(time.time() - start)
-
-    # start = time.time()
-    # data = generate_regular_data(dataset_size, graph_size, degree)
+    # data = pool.map(f, [make_regular_graph(opts.degree, graph_size) for _ in range(opts.dataset_size)])
     # print(time.time() - start)
 
     problem = opts.problem
 
     for graph_size in opts.graph_sizes:
-
+        start = time.time()
         datadir = os.path.join(opts.data_dir, problem)
         os.makedirs(datadir, exist_ok=True)
 
@@ -92,10 +90,11 @@ if __name__ == '__main__':
         np.random.seed(opts.seed)
         if problem == 'lp':
             dataset = generate_regular_data(opts.dataset_size, graph_size,
-                                            opts.degree, opts.steps, opts.awe_samples)
+                                            opts.degree, opts.awe_steps, opts.awe_samples)
         else:
             assert False, "Unknown problem: {}".format(problem)
 
         save_dataset(dataset, filename)
+        print(f"Took {time.time() - start} sec. to generate dataset")
 
     console = []
