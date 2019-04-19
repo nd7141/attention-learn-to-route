@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from typing import NamedTuple
 from utils.boolmask import mask_long2bool, mask_long_scatter
-
+import torch
 
 class StateLP(NamedTuple):
     valids: torch.Tensor
@@ -45,8 +45,15 @@ class StateLP(NamedTuple):
 
         nodes = input['nodes']
         batch_size, n_loc, _ = nodes.size()
-        prev_a = input['starts'][:, None]
+        prev_a = input['starts'].type(torch.LongTensor)
 
+        visited_ = torch.zeros(
+            batch_size, 1, n_loc,
+            dtype=torch.uint8, device=nodes.device
+        )
+        # replace scatter with explicit assignment
+        # https: // stackoverflow.com / a / 29831596 / 2069858
+        visited_[np.arange(batch_size), 0, prev_a.squeeze().numpy()] = 1
 
         return StateLP(
             valids=input["valids"],
@@ -54,10 +61,7 @@ class StateLP(NamedTuple):
             prev_a=prev_a,
             visited_=(  # Visited as mask is easier to understand, as long more memory efficient
                 # Keep visited_ with depot so we can scatter efficiently (if there is an action for depot)
-                torch.zeros(
-                    batch_size, 1, n_loc,
-                    dtype=torch.uint8, device=nodes.device
-                ).scatter(-1, prev_a[:, :, None], 1)
+                visited_
                 if visited_dtype == torch.uint8
                 else torch.zeros(batch_size, 1, (n_loc + 1 + 63) // 64, dtype=torch.int64, device=nodes.device)  # Ceil
             ),

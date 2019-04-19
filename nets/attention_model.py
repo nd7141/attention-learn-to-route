@@ -54,7 +54,9 @@ class AttentionModel(nn.Module):
                  normalization='batch',
                  n_heads=8,
                  checkpoint_encoder=False,
-                 shrink_size=None):
+                 shrink_size=None,
+                 **kwargs
+                 ):
         super(AttentionModel, self).__init__()
 
         self.embedding_dim = embedding_dim
@@ -69,6 +71,7 @@ class AttentionModel(nn.Module):
         self.is_graph = problem.NAME == 'graph'
         self.is_tsp = problem.NAME == 'tsp'
         self.is_lp = problem.NAME == 'lp'
+
 
         self.tanh_clipping = tanh_clipping
 
@@ -107,7 +110,8 @@ class AttentionModel(nn.Module):
         else:  # graph
             # Embedding of last node
             step_context_dim = embedding_dim
-            node_dim = 1  # node number for now (TO DO: parametrize later)
+            dim_vocab = {2: 2, 3: 5, 4: 15, 5: 52, 6: 203, 7: 877, 8: 4140}
+            node_dim = dim_vocab[kwargs["steps"]]  # node number for now (TO DO: parametrize later)
 
         self.init_embed = nn.Linear(node_dim, embedding_dim)
 
@@ -411,7 +415,7 @@ class AttentionModel(nn.Module):
                     ),
                     -1
                 )
-        elif self.is_graph:
+        elif self.is_graph or self.is_lp:
             return torch.cat(
                 (
                     torch.gather(

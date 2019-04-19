@@ -57,6 +57,15 @@ def get_options(args=None):
     parser.add_argument('--data_distribution', type=str, default=None,
                         help='Data distribution to use during training, defaults and options depend on problem.')
 
+    # embeddings
+    # AWE
+    parser.add_argument('--awe_steps', type=int, default=3,
+                        help='The number of steps for anonymous walk.')
+    parser.add_argument('--awe_samples', type=int, default=100,
+                        help='The number of samples for each node to sample anonymous walks.')
+    parser.add_argument('--degree', type=int, default=5,
+                        help='The degree for regular graphs.')
+
     # Misc
     parser.add_argument('--log_step', type=int, default=50, help='Log info every log_step steps')
     parser.add_argument('--log_dir', default='logs', help='Directory to write TensorBoard information to')

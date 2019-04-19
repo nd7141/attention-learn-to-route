@@ -52,7 +52,7 @@ if __name__ == '__main__':
     parser.add_argument("--problem", type=str, default='lp',
                         help="Problem , 'lp'.")
 
-    parser.add_argument("--dataset_size", type=int, default=10, help="Size of the dataset")
+    parser.add_argument("--dataset_size", type=int, default=10, help="Number of problems.")
     parser.add_argument('--graph_sizes', type=int, nargs='+', default=[20],
                         help="Sizes of problem instances (default 20)")
     parser.add_argument('--degree', type=int, default=3, help="Degree of regular graph")
@@ -95,8 +95,6 @@ if __name__ == '__main__':
                                             opts.degree, opts.steps, opts.awe_samples)
         else:
             assert False, "Unknown problem: {}".format(problem)
-
-        print(dataset[0])
 
         save_dataset(dataset, filename)
 
