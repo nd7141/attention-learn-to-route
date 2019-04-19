@@ -53,7 +53,7 @@ class StateLP(NamedTuple):
         )
         # replace scatter with explicit assignment
         # https: // stackoverflow.com / a / 29831596 / 2069858
-        visited_[np.arange(batch_size), 0, prev_a.squeeze().numpy()] = 1
+        visited_[np.arange(batch_size), 0, prev_a.squeeze().cpu().numpy()] = 1
 
         return StateLP(
             valids=input["valids"],
@@ -108,7 +108,7 @@ class StateLP(NamedTuple):
 
     def get_valids_mask(self):
         N, _, _ = self.valids.size()
-        valids_mask = self.valids[np.arange(N), self.prev_a.squeeze().numpy()][:, None]
+        valids_mask = self.valids[np.arange(N), self.prev_a.squeeze().cpu().numpy()][:, None]
         return valids_mask
 
     def get_current_node(self):
