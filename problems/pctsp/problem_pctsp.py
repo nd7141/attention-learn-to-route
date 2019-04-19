@@ -150,7 +150,7 @@ def generate_instance(size, penalty_factor=3):
 
 class PCTSPDataset(Dataset):
     
-    def __init__(self, filename=None, size=50, num_samples=1000000, offset=0, distribution=None):
+    def __init__(self, filename=None, size=50, num_samples=1000000, offset=0, distribution=None, **kwargs):
         super(PCTSPDataset, self).__init__()
 
         self.data_set = []

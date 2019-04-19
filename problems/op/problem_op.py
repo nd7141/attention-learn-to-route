@@ -105,7 +105,7 @@ def generate_instance(size, prize_type):
 
 class OPDataset(Dataset):
     
-    def __init__(self, filename=None, size=50, num_samples=1000000, offset=0, distribution='const'):
+    def __init__(self, filename=None, size=50, num_samples=1000000, offset=0, distribution='const', **kwargs):
         super(OPDataset, self).__init__()
         assert distribution is not None, "Data distribution must be specified for OP"
         # Currently the distribution can only vary in the type of the prize

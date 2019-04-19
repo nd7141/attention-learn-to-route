@@ -29,7 +29,6 @@ class LP(object):
         # the negative length of a path is the cost
         # Assume padding with zero in the end
         g = pi.roll(shifts=1, dims=1)
-        print(pi)
         return -(((pi - g) != 0).sum(dim = 1) - 1).float(), None
 
     @staticmethod
@@ -65,10 +64,13 @@ class LP(object):
 class LPDataset(Dataset):
 
     def __init__(self, filename=None, size=None,
-                 num_samples=10000, offset=0, distribution=None,
-                 degree=3, steps=3, awe_samples=100):
+                 num_samples=10000, offset=0, distribution=None, **kwargs
+                 ):
         super(LPDataset, self).__init__()
 
+        degree = kwargs.get("degree", 3)
+        steps = kwargs.get("steps", 3)
+        awe_samples = kwargs.get("awe_samples", 3)
 
         if filename is not None:
             assert os.path.splitext(filename)[1] == '.pkl'

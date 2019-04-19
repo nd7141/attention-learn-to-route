@@ -43,7 +43,8 @@ def eval_dataset_mp(args):
 
     model, _ = load_model(opts.model)
     val_size = opts.val_size // num_processes
-    dataset = model.problem.make_dataset(filename=dataset_path, num_samples=val_size, offset=opts.offset + val_size * i)
+    dataset = model.problem.make_dataset(filename=dataset_path, num_samples=val_size, offset=opts.offset + val_size * i,
+                                         degree=opts.degree, steps=opts.awe_steps, awe_samples=opts.awe_samples)
     device = torch.device("cuda:{}".format(i))
 
     return _eval_dataset(model, dataset, width, softmax_temp, opts, device)
@@ -66,7 +67,8 @@ def eval_dataset(dataset_path, width, softmax_temp, opts):
 
     else:
         device = torch.device("cuda:0" if use_cuda else "cpu")
-        dataset = model.problem.make_dataset(filename=dataset_path, num_samples=opts.val_size, offset=opts.offset)
+        dataset = model.problem.make_dataset(filename=dataset_path, num_samples=opts.val_size, offset=opts.offset,
+                                             degree=opts.degree, steps=opts.awe_steps, awe_samples=opts.awe_samples)
         results = _eval_dataset(model, dataset, width, softmax_temp, opts, device)
 
     # This is parallelism, even if we use multiprocessing (we report as if we did not use multiprocessing, e.g. 1 GPU)
@@ -203,6 +205,15 @@ if __name__ == "__main__":
     parser.add_argument('--results_dir', default='results', help="Name of results directory")
     parser.add_argument('--multiprocessing', action='store_true',
                         help='Use multiprocessing to parallelize over multiple GPUs')
+
+    # embeddings
+    # AWE
+    parser.add_argument('--awe_steps', type=int, default=3,
+                        help='The number of steps for anonymous walk.')
+    parser.add_argument('--awe_samples', type=int, default=100,
+                        help='The number of samples for each node to sample anonymous walks.')
+    parser.add_argument('--degree', type=int, default=5,
+                        help='The degree for regular graphs.')
 
     opts = parser.parse_args()
 

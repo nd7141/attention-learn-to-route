@@ -54,7 +54,7 @@ class TSP(object):
 
 class TSPDataset(Dataset):
     
-    def __init__(self, filename=None, size=50, num_samples=1000000, offset=0, distribution=None):
+    def __init__(self, filename=None, size=50, num_samples=1000000, offset=0, distribution=None, **kwargs):
         super(TSPDataset, self).__init__()
 
         self.data_set = []
