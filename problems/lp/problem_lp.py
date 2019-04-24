@@ -64,7 +64,7 @@ class LP(object):
 class LPDataset(Dataset):
 
     def __init__(self, filename=None, size=None,
-                 num_samples=10000, offset=0, distribution=None, **kwargs
+                 num_samples=1000000, offset=0, distribution=None, **kwargs
                  ):
         super(LPDataset, self).__init__()
 
@@ -77,13 +77,20 @@ class LPDataset(Dataset):
 
             with open(filename, 'rb') as f:
                 data = pickle.load(f)
-                self.data = [
-                    {
-                        'valids': torch.ByteTensor(valids),
-                        'nodes': torch.FloatTensor(embeddings),
-                        'starts': torch.LongTensor(starts)
-                    }
-                    for embeddings, valids, starts in data[offset:offset + num_samples]]
+
+                _, valids = data[0]
+                N, M = valids.shape
+                assert N == M, "Shape of valids (reverted adjacency matrix )should be NxN: {}".format(valids.shape)
+
+                self.data = [{
+                            'valids': torch.ByteTensor(valids),
+                            'nodes': torch.FloatTensor(embeddings),
+                            'starts': torch.LongTensor([start])
+                        }
+                    for embeddings, valids in data
+                    for start in range(N)
+                ]
+
         else:
             # Generate data with AW embeddings
             self.data = [generate_instance(size, degree, steps, awe_samples) for _ in range(num_samples)]
