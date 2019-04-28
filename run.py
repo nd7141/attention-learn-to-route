@@ -8,7 +8,7 @@ import torch
 import torch.optim as optim
 from tensorboard_logger import Logger as TbLogger
 
-from nets.critic_network import CriticNetwork
+from nets.critic_network import CriticNetwork, CriticNetworkLP
 from options import get_options
 from train import train_epoch, validate, get_inner_model
 from reinforce_baselines import NoBaseline, ExponentialBaseline, CriticBaseline, RolloutBaseline, WarmupBaseline
@@ -103,6 +103,19 @@ def run(opts):
         )
     elif opts.baseline == 'rollout':
         baseline = RolloutBaseline(model, problem, opts)
+    elif opts.baseline == 'critic_lp':
+        assert problem.NAME == 'lp'
+        dim_vocab = {2: 2, 3: 5, 4: 15, 5: 52, 6: 203, 7: 877, 8: 4140}
+        baseline = CriticBaseline(
+            (
+                CriticNetworkLP(
+                    dim_vocab[opts.awe_steps],
+                    opts.embedding_dim,
+                    opts.hidden_dim,
+                    opts.n_encode_layers,
+                    opts.normalization
+                )
+            ).to(opts.device))
     else:
         assert opts.baseline is None, "Unknown baseline: {}".format(opts.baseline)
         baseline = NoBaseline()
