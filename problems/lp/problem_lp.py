@@ -8,6 +8,7 @@ import numpy as np
 
 from embeddings.awe import AnonymousWalks as AW
 from generate_data_lp import make_regular_graph, get_valids
+from utils.functions import get_valids, is_paths_valids
 
 
 
@@ -17,7 +18,7 @@ class LP(object):
     NAME = 'lp'
 
     @staticmethod
-    def get_costs(input, pi):
+    def get_costs(input, pi, check_paths=True):
         # Check that tours are valid, i.e. contain 0 to n -1
         # assert (
         #     torch.arange(pi.size(1), out=pi.data.new()).view(1, -1).expand_as(pi) ==
@@ -29,8 +30,13 @@ class LP(object):
 
         # the negative length of a path is the cost
         # Assume padding with zero in the end
+        # is_valid, costs = is_paths_valids(pi, input['valids'])
+        # if check_paths:
+        #     print(is_valid)
+
         g = pi.roll(shifts=1, dims=1)
-        return -(((pi - g) != 0).sum(dim = 1) - 1).float(), None
+        costs = -(((pi - g) != 0).sum(dim=1) - 1).float()
+        return costs, None
 
     @staticmethod
     def make_dataset(*args, **kwargs):
