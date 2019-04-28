@@ -154,7 +154,7 @@ class RolloutBaseline(Baseline):
         self.model = copy.deepcopy(model)
         # Always generate baseline dataset when updating model to prevent overfitting to the baseline dataset
         if dataset is not None:
-            if len(dataset) != self.opts.val_size:
+            if len(dataset) != self.opts.stat_size:
                 print("Warning: not using saved baseline dataset since val_size does not match")
                 dataset = None
             elif (dataset[0] if self.problem.NAME == 'tsp' else dataset[0]['loc']).size(0) != self.opts.graph_size:
@@ -163,7 +163,8 @@ class RolloutBaseline(Baseline):
 
         if dataset is None:
             self.dataset = self.problem.make_dataset(
-                size=self.opts.graph_size, num_samples=self.opts.val_size, distribution=self.opts.data_distribution,
+                filename=self.opts.stat_dataset, num_samples=self.opts.stat_size,
+                size=self.opts.graph_size, distribution=self.opts.data_distribution,
                 degree=self.opts.degree, steps=self.opts.awe_steps, awe_samples=self.opts.awe_samples
             )
         else:

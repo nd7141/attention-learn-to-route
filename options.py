@@ -12,11 +12,18 @@ def get_options(args=None):
     parser.add_argument('--problem', default='tsp', help="The problem to solve, default 'tsp'")
     parser.add_argument('--graph_size', type=int, default=20, help="The size of the problem graph")
     parser.add_argument('--batch_size', type=int, default=512, help='Number of instances per batch during training')
-    parser.add_argument('--epoch_size', type=int, default=1280000, help='Number of instances per epoch during training')
+    parser.add_argument('--eval_batch_size', type=int, default=512,
+                        help="Batch size to use during (baseline) evaluation")
+    parser.add_argument('--epoch_size', type=int, default=10240, help='Number of instances per epoch during training')
     parser.add_argument('--val_size', type=int, default=10000,
                         help='Number of instances used for reporting validation performance')
+    parser.add_argument('--stat_size', type=int, default=10000,
+                        help='Number of instances used for stat dataset. Used only by rollout baseline')
     parser.add_argument('--train_dataset', type=str, default=None, help='Dataset file to use for training')
     parser.add_argument('--val_dataset', type=str, default=None, help='Dataset file to use for validation')
+    parser.add_argument('--stat_dataset', type=str, default=None,
+                        help='Dataset file to use for t-test. Used only by rollout baseline')
+
 
     # Model
     parser.add_argument('--model', default='attention', help="Model, 'attention' (default) or 'pointer'")
@@ -48,8 +55,6 @@ def get_options(args=None):
     parser.add_argument('--bl_warmup_epochs', type=int, default=None,
                         help='Number of epochs to warmup the baseline, default None means 1 for rollout (exponential '
                              'used for warmup phase), 0 otherwise. Can only be used with rollout baseline.')
-    parser.add_argument('--eval_batch_size', type=int, default=1024,
-                        help="Batch size to use during (baseline) evaluation")
     parser.add_argument('--checkpoint_encoder', action='store_true',
                         help='Set to decrease memory usage by checkpointing encoder')
     parser.add_argument('--shrink_size', type=int, default=None,

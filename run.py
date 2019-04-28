@@ -138,8 +138,8 @@ def run(opts):
 
     # Start the actual training loop
     val_dataset = problem.make_dataset(
-        size=opts.graph_size, num_samples=opts.val_size, filename=opts.val_dataset, distribution=opts.data_distribution,
-        degree=opts.degree, steps=opts.awe_steps, awe_samples=opts.awe_samples
+        num_samples=opts.val_size, filename=opts.val_dataset, distribution=opts.data_distribution,
+        size=opts.graph_size, degree=opts.degree, steps=opts.awe_steps, awe_samples=opts.awe_samples
     )
 
     if opts.resume:
