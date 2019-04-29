@@ -19,7 +19,7 @@ class Baseline(object):
     def get_learnable_parameters(self):
         return []
 
-    def epoch_callback(self, model, epoch):
+    def epoch_callback(self, model, epoch, **kwargs):
         pass
 
     def state_dict(self):
@@ -61,7 +61,7 @@ class WarmupBaseline(Baseline):
         # Return convex combination of baseline and of loss
         return self.alpha * v + (1 - self.alpha) * vw, self.alpha * l + (1 - self.alpha * lw)
 
-    def epoch_callback(self, model, epoch):
+    def epoch_callback(self, model, epoch, **kwargs):
         # Need to call epoch callback of inner model (also after first epoch if we have not used it)
         self.baseline.epoch_callback(model, epoch)
         self.alpha = (epoch + 1) / float(self.n_epochs)
@@ -92,7 +92,6 @@ class ExponentialBaseline(Baseline):
         self.v = None
 
     def eval(self, x, c):
-
         if self.v is None:
             v = c.mean()
         else:
@@ -109,6 +108,25 @@ class ExponentialBaseline(Baseline):
     def load_state_dict(self, state_dict):
         self.v = state_dict['v']
 
+class ConstantBaseline(Baseline):
+
+    def __init__(self):
+        super(Baseline, self).__init__()
+        self.v = None
+
+    def eval(self, x, c):
+        # print(torch.tensor(-15))
+        v = c.mean()
+        return -15, 0  # No loss
+
+
+    def state_dict(self):
+        return {
+            'v': self.v
+        }
+
+    def load_state_dict(self, state_dict):
+        self.v = state_dict['v']
 
 class CriticBaseline(Baseline):
 
@@ -125,7 +143,7 @@ class CriticBaseline(Baseline):
     def get_learnable_parameters(self):
         return list(self.critic.parameters())
 
-    def epoch_callback(self, model, epoch):
+    def epoch_callback(self, model, epoch, **kwargs):
         pass
 
     def state_dict(self):
@@ -192,7 +210,7 @@ class RolloutBaseline(Baseline):
         # There is no loss
         return v, 0
 
-    def epoch_callback(self, model, epoch):
+    def epoch_callback(self, model, epoch, **kwargs):
         """
         Challenges the current baseline with the model and replaces the baseline model if it is improved.
         :param model: The model to challenge the baseline by
@@ -215,6 +233,7 @@ class RolloutBaseline(Baseline):
             if p_val < self.opts.bl_alpha:
                 print('Update baseline')
                 self._update_model(model, epoch)
+                return True
 
     def state_dict(self):
         return {

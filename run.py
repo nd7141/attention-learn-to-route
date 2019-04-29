@@ -11,7 +11,7 @@ from tensorboard_logger import Logger as TbLogger
 from nets.critic_network import CriticNetwork
 from options import get_options
 from train import train_epoch, validate, get_inner_model
-from reinforce_baselines import NoBaseline, ExponentialBaseline, CriticBaseline, RolloutBaseline, WarmupBaseline
+from reinforce_baselines import NoBaseline, ExponentialBaseline, CriticBaseline, RolloutBaseline, WarmupBaseline, ConstantBaseline
 from nets.attention_model import AttentionModel
 from nets.pointer_network import PointerNetwork, CriticNetworkLSTM
 from utils import torch_load_cpu, load_problem
@@ -79,6 +79,8 @@ def run(opts):
     # Initialize baseline
     if opts.baseline == 'exponential':
         baseline = ExponentialBaseline(opts.exp_beta)
+    elif opts.baseline == 'constant':
+        baseline = ConstantBaseline()
     elif opts.baseline == 'critic' or opts.baseline == 'critic_lstm':
         assert problem.NAME == 'tsp', "Critic only supported for TSP"
         baseline = CriticBaseline(
@@ -157,6 +159,7 @@ def run(opts):
     if opts.eval_only:
         validate(model, val_dataset, opts)
     else:
+        extra = {'updates': 0}
         for epoch in range(opts.epoch_start, opts.epoch_start + opts.n_epochs):
             train_epoch(
                 model,
@@ -167,8 +170,10 @@ def run(opts):
                 val_dataset,
                 problem,
                 tb_logger,
-                opts
+                opts,
+                extra=extra
             )
+            print('Extra', extra)
 
 
 if __name__ == "__main__":

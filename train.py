@@ -64,14 +64,11 @@ def clip_grad_norms(param_groups, max_norm=math.inf):
     return grad_norms, grad_norms_clipped
 
 
-def train_epoch(model, optimizer, baseline, lr_scheduler, epoch, val_dataset, problem, tb_logger, opts):
+def train_epoch(model, optimizer, baseline, lr_scheduler,
+                epoch, val_dataset, problem, tb_logger, opts, extra):
     print("Start train epoch {}, lr={} for run {}".format(epoch, optimizer.param_groups[0]['lr'], opts.run_name))
-    step = epoch * (opts.epoch_size // opts.batch_size)
     start_time = time.time()
     lr_scheduler.step(epoch)
-
-    if not opts.no_tensorboard:
-        tb_logger.log_value('learnrate_pg0', optimizer.param_groups[0]['lr'], step)
 
     # Generate new training data for each epoch
     training_dataset = baseline.wrap_dataset(problem.make_dataset(
@@ -80,6 +77,10 @@ def train_epoch(model, optimizer, baseline, lr_scheduler, epoch, val_dataset, pr
         degree=opts.degree, steps=opts.awe_steps, awe_samples=opts.awe_samples
     ))
     training_dataloader = DataLoader(training_dataset, batch_size=opts.batch_size, num_workers=1)
+
+    step = epoch * (len(training_dataset) // opts.batch_size)
+    if not opts.no_tensorboard:
+        tb_logger.log_value('learnrate_pg0', optimizer.param_groups[0]['lr'], epoch)
 
     # Put model in train mode!
     model.train()
@@ -120,9 +121,18 @@ def train_epoch(model, optimizer, baseline, lr_scheduler, epoch, val_dataset, pr
     avg_reward = validate(model, val_dataset, opts)
 
     if not opts.no_tensorboard:
-        tb_logger.log_value('val_avg_reward', avg_reward, step)
+        tb_logger.log_value('val_avg_reward', avg_reward, epoch)
 
-    baseline.epoch_callback(model, epoch)
+    updated = baseline.epoch_callback(model, epoch)
+    # update to baseline
+    if updated is not None and updated == True:
+        extra["updates"] += 1
+    if not opts.no_tensorboard:
+        tb_logger.log_value('update_baseline', extra["updates"], epoch)
+
+    print(extra["updates"])
+
+
 
 
 def train_batch(
