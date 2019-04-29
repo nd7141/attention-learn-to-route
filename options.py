@@ -79,7 +79,7 @@ def get_options(args=None):
     parser.add_argument('--output_dir', default='outputs', help='Directory to write output models to')
     parser.add_argument('--epoch_start', type=int, default=0,
                         help='Start at epoch # (relevant for learning rate decay)')
-    parser.add_argument('--checkpoint_epochs', type=int, default=1,
+    parser.add_argument('--checkpoint_epochs', type=int, default=0,
                         help='Save checkpoint every n epochs (default 1), 0 to save no checkpoints')
     parser.add_argument('--load_path', help='Path to load model parameters and optimizer state from')
     parser.add_argument('--resume', help='Resume from previous checkpoint file')
@@ -89,7 +89,7 @@ def get_options(args=None):
     opts = parser.parse_args(args)
 
     opts.use_cuda = torch.cuda.is_available() and not opts.no_cuda
-    opts.run_name = "{}_{}".format(opts.run_name, time.strftime("%Y%m%dT%H%M%S"))
+    opts.run_name = "{}_{}".format(opts.run_name, time.strftime("%Y-%m-%d-%H-%M-%S"))
     opts.save_dir = os.path.join(
         opts.output_dir,
         "{}_{}".format(opts.problem, opts.graph_size),
