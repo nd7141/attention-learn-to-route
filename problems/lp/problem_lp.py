@@ -78,13 +78,16 @@ class LPDataset(Dataset):
             with open(filename, 'rb') as f:
                 data = pickle.load(f)
                 self.data = []
-                for embeddings, valids, starts in data:
+                embeddings, valids = data[0]
+                N, M = valids.shape
+                assert N == M, "Valids shape should be squared."
+                for embeddings, valids in data:
                     instance = {
                         'valids': torch.ByteTensor(valids),
-                        'nodes': torch.FloatTensor(embeddings),
-                        'starts': torch.LongTensor(starts)
+                        'nodes': torch.FloatTensor(embeddings)
                     }
-                    self.data.append(instance)
+                    for start in range(N):
+                        self.data.append(dict(instance, starts=torch.LongTensor([start])))
 
             # if num_samples:
             #     self.data = np.random.choice(self.data, num_samples, replace=True)

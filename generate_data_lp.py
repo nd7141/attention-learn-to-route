@@ -35,7 +35,8 @@ def generate_regular_data(dataset_size, graph_size, degree,
         aw.graph = G
         embeddings = aw.get_sampled_embeddings(steps, samples)
         valids = get_valids(G)
-        data.append((embeddings, valids, np.random.randint(0, G.order(), (1,))))
+        # data.append((embeddings, valids, np.random.randint(0, G.order(), (1,))))
+        data.append((embeddings, valids))
     return data
 
 def _get_embeddings_and_valids(G, steps, samples):
