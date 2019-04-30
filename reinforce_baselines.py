@@ -4,6 +4,7 @@ from torch.utils.data import Dataset
 from scipy.stats import ttest_rel
 import copy
 from train import rollout, get_inner_model
+import numpy as np
 
 class Baseline(object):
 
@@ -110,15 +111,20 @@ class ExponentialBaseline(Baseline):
 
 class ConstantBaseline(Baseline):
 
-    def __init__(self):
+    def __init__(self, init_value=-15, prob_to_update=0.01, update_value=0.05):
         super(Baseline, self).__init__()
-        self.v = None
+        self.v = init_value
+        self.prob = prob_to_update
+        self.delta = update_value
 
     def eval(self, x, c):
-        # print(torch.tensor(-15))
         v = c.mean()
-        return -10, 0  # No loss
+        updated = False
+        if self.v > v and np.random.random() < self.prob:
+            self.v -= self.delta
+            updated = True
 
+        return self.v, updated  # second value to recognize update
 
     def state_dict(self):
         return {

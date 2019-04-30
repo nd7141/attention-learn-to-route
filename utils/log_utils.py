@@ -1,5 +1,5 @@
 def log_values(cost, grad_norms, epoch, batch_id, step,
-               log_likelihood, reinforce_loss, bl_loss, tb_logger, opts):
+               log_likelihood, reinforce_loss, bl_loss, tb_logger, opts, extra):
     avg_cost = cost.mean().item()
     grad_norms, grad_norms_clipped = grad_norms
 
@@ -18,7 +18,10 @@ def log_values(cost, grad_norms, epoch, batch_id, step,
         tb_logger.log_value('grad_norm', grad_norms[0], step)
         tb_logger.log_value('grad_norm_clipped', grad_norms_clipped[0], step)
 
+        tb_logger.log_value('update_baseline', extra["updates"], step)
+
         if opts.baseline == 'critic' or opts.baseline == 'critic_lp':
+
             tb_logger.log_value('critic_loss', bl_loss.item(), step)
             tb_logger.log_value('critic_grad_norm', grad_norms[1], step)
             tb_logger.log_value('critic_grad_norm_clipped', grad_norms_clipped[1], step)

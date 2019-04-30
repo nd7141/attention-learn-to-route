@@ -91,7 +91,8 @@ def train_epoch(model, optimizer, baseline, lr_scheduler,
             step,
             batch,
             tb_logger,
-            opts
+            opts,
+            extra
         )
 
         step += 1
@@ -122,7 +123,7 @@ def train_epoch(model, optimizer, baseline, lr_scheduler,
     if updated is not None and updated == True:
         extra["updates"] += 1
     if not opts.no_tensorboard:
-        tb_logger.log_value('update_baseline', extra["updates"], epoch)
+        tb_logger.log_value('update_baseline', extra["updates"], step)
 
 
 
@@ -136,7 +137,8 @@ def train_batch(
         step,
         batch,
         tb_logger,
-        opts
+        opts,
+        extra
 ):
     x, bl_val = baseline.unwrap_batch(batch)
     x = move_to(x, opts.device)
@@ -147,6 +149,8 @@ def train_batch(
 
     # Evaluate baseline, get baseline loss if any (only for critic)
     bl_val, bl_loss = baseline.eval(x, cost) if bl_val is None else (bl_val, 0)
+    if bl_loss == True and opts.baseline == 'constant':
+        extra["updates"] += 1
 
     # Calculate loss
     reinforce_loss = ((cost - bl_val) * log_likelihood).mean()
@@ -162,4 +166,4 @@ def train_batch(
     # Logging
     if step % int(opts.log_step) == 0:
         log_values(cost, grad_norms, epoch, batch_id, step,
-                   log_likelihood, reinforce_loss, bl_loss, tb_logger, opts)
+                   log_likelihood, reinforce_loss, bl_loss, tb_logger, opts, extra)
