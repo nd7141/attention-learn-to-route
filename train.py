@@ -65,17 +65,11 @@ def clip_grad_norms(param_groups, max_norm=math.inf):
 
 
 def train_epoch(model, optimizer, baseline, lr_scheduler,
-                epoch, val_dataset, problem, tb_logger, opts, extra):
+                epoch, val_dataset, problem, tb_logger, opts, training_dataset, extra):
     print("Start train epoch {}, lr={} for run {}".format(epoch, optimizer.param_groups[0]['lr'], opts.run_name))
     start_time = time.time()
     lr_scheduler.step(epoch)
 
-    # Generate new training data for each epoch
-    training_dataset = baseline.wrap_dataset(problem.make_dataset(
-        filename=opts.train_dataset, num_samples=opts.epoch_size,
-        size=opts.graph_size, distribution=opts.data_distribution,
-        degree=opts.degree, steps=opts.awe_steps, awe_samples=opts.awe_samples
-    ))
     training_dataloader = DataLoader(training_dataset, batch_size=opts.batch_size, num_workers=1)
 
     step = epoch * (len(training_dataset) // opts.batch_size)
@@ -129,8 +123,6 @@ def train_epoch(model, optimizer, baseline, lr_scheduler,
         extra["updates"] += 1
     if not opts.no_tensorboard:
         tb_logger.log_value('update_baseline', extra["updates"], epoch)
-
-    print(extra["updates"])
 
 
 
