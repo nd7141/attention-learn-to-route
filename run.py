@@ -175,11 +175,11 @@ def run(opts):
         extra = {'updates': 0}
 
         # Generate training data
-        training_dataset = baseline.wrap_dataset(problem.make_dataset(
+        dataset = problem.make_dataset(
             filename=opts.train_dataset, num_samples=opts.epoch_size,
             size=opts.graph_size, distribution=opts.data_distribution,
             degree=opts.degree, steps=opts.awe_steps, awe_samples=opts.awe_samples
-        ))
+        )
 
         for epoch in range(opts.epoch_start, opts.epoch_start + opts.n_epochs):
 
@@ -193,7 +193,7 @@ def run(opts):
                 problem,
                 tb_logger,
                 opts,
-                training_dataset,
+                dataset,
                 extra=extra
             )
 

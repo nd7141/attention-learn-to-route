@@ -65,11 +65,12 @@ def clip_grad_norms(param_groups, max_norm=math.inf):
 
 
 def train_epoch(model, optimizer, baseline, lr_scheduler,
-                epoch, val_dataset, problem, tb_logger, opts, training_dataset, extra):
+                epoch, val_dataset, problem, tb_logger, opts, dataset, extra):
     print("Start train epoch {}, lr={} for run {}".format(epoch, optimizer.param_groups[0]['lr'], opts.run_name))
     start_time = time.time()
     lr_scheduler.step(epoch)
 
+    training_dataset = baseline.wrap_dataset(dataset)
     training_dataloader = DataLoader(training_dataset, batch_size=opts.batch_size, num_workers=1)
 
     step = epoch * (len(training_dataset) // opts.batch_size)
