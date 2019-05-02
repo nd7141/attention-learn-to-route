@@ -251,7 +251,7 @@ class AttentionModel(nn.Module):
         # Perform decoding steps
         i = 0
 
-        entropy = torch.zeros((batch_size, 1))
+        entropy = torch.zeros((batch_size, 1), device=input['valids'].device)
 
         while not (self.shrink_size is None and state.all_finished()):
             if self.shrink_size is not None:
