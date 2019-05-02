@@ -155,7 +155,7 @@ def train_batch(
     # Calculate loss
     reinforce_loss = ((cost - bl_val) * log_likelihood).mean()
     entropy_loss = entropy.mean()
-    loss = reinforce_loss + bl_loss - 0.001 * entropy_loss
+    loss = reinforce_loss + bl_loss - opts.entropy * entropy_loss
 
     # Perform backward pass and optimization step
     optimizer.zero_grad()
