@@ -151,7 +151,7 @@ class AttentionModel(nn.Module):
         cost, mask = self.problem.get_costs(input, pi)
         # Log likelyhood is calculated within the model since returning it per action does not work well with
         # DataParallel since sequences can be of different lengths
-        ll = self._calc_log_likelihood(_log_p, pi, mask)
+        ll = self._calc_log_likelihood(_log_p, pi[:, 1:], mask)
         if return_pi:
             return cost, ll, entropy, pi
 
@@ -239,9 +239,10 @@ class AttentionModel(nn.Module):
     def _inner(self, input, embeddings):
 
         outputs = []
-        sequences = []
 
         state = self.problem.make_state(input)
+
+        sequences = [state.prev_a.flatten()]
 
         # Compute keys, values for the glimpse and keys for the logits once as they can be reused in every step
         fixed = self._precompute(embeddings)
