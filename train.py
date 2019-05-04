@@ -34,7 +34,12 @@ def rollout(model, dataset, opts):
 
     def eval_model_bat(bat):
         with torch.no_grad():
-            cost, _, _ = model(move_to(bat, opts.device))
+            output = model(move_to(bat, opts.device), return_pi=True)
+            cost = output[0]
+            if len(output) > 2:
+                print()
+                print(output[0])
+                print(output[2])
         return cost.data.cpu()
 
     return torch.cat([
