@@ -252,8 +252,6 @@ class AttentionModel(nn.Module):
         # Perform decoding steps
         i = 0
 
-        entropy = torch.zeros((batch_size, 1), device=input['valids'].device)
-
         while not (self.shrink_size is None and state.all_finished()):
             if self.shrink_size is not None:
                 unfinished = torch.nonzero(state.get_finished() == 0)
@@ -286,12 +284,9 @@ class AttentionModel(nn.Module):
             outputs.append(log_p[:, 0, :])
             sequences.append(selected)
 
-            log_pe = log_p.clamp(-10,10)
-            entropy += -torch.sum(log_pe.exp() * log_pe, dim=-1)
-
             i += 1
         # Collected lists, return Tensor
-        return torch.stack(outputs, 1), torch.stack(sequences, 1), entropy
+        return torch.stack(outputs, 1), torch.stack(sequences, 1)
 
     def sample_many(self, input, batch_rep=1, iter_rep=1):
         """
