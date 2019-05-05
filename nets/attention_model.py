@@ -57,6 +57,7 @@ class AttentionModel(nn.Module):
                  n_heads=8,
                  checkpoint_encoder=False,
                  shrink_size=None,
+                 gcn_size=10,
                  **kwargs
                  ):
         super(AttentionModel, self).__init__()
@@ -113,12 +114,12 @@ class AttentionModel(nn.Module):
             # Embedding of last node
 
             self.gcn = gcn_utils.GraphConvolutionBlock(
-                vertex_emb_size, gcn_size, out_size=hid_size, num_convolutions=2,
-                activation=activation, normalize_hid=layernorm
+                self.hidden_dim, gcn_size, out_size=self.embedding_dim, num_convolutions=2,
+                activation=nn.ELU(), normalize_hid=False
             )
             step_context_dim = embedding_dim
             dim_vocab = {2: 2, 3: 5, 4: 15, 5: 52, 6: 203, 7: 877, 8: 4140}
-            node_dim = dim_vocab[kwargs["steps"]]  # node number for now (TO DO: parametrize later)
+            node_dim = dim_vocab[kwargs["steps"]]
 
         self.init_embed = nn.Linear(node_dim, embedding_dim)
 
