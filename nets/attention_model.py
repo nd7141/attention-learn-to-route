@@ -110,16 +110,14 @@ class AttentionModel(nn.Module):
             self.W_placeholder = nn.Parameter(torch.Tensor(2 * embedding_dim))
             self.W_placeholder.data.uniform_(-1, 1)  # Placeholder should be in range of activations
 
-        else:  # graph
-            # Embedding of last node
-
-            self.gcn = gcn_utils.GraphConvolutionBlock(
-                self.hidden_dim, gcn_size, out_size=self.embedding_dim, num_convolutions=2,
+        else:  # graph and lp
+            dim_vocab = {2: 2, 3: 5, 4: 15, 5: 52, 6: 203, 7: 877, 8: 4140}
+            node_dim = dim_vocab[kwargs["steps"]]
+            self.gcn = gcn_utils.GraphConvolutionBlock(node_dim,
+                self.hidden_dim, out_size=self.embedding_dim, num_convolutions=2,
                 activation=nn.ELU(), normalize_hid=False
             )
             step_context_dim = embedding_dim
-            dim_vocab = {2: 2, 3: 5, 4: 15, 5: 52, 6: 203, 7: 877, 8: 4140}
-            node_dim = dim_vocab[kwargs["steps"]]
 
         self.init_embed = nn.Linear(node_dim, embedding_dim)
 
@@ -221,7 +219,7 @@ class AttentionModel(nn.Module):
     def _init_embed(self, input):
 
         if self.is_graph or self.is_lp:
-            return self.init_embed(input['nodes'])
+            return self.gcn(input['nodes'], 1 - input['valids'])
 
         if self.is_vrp or self.is_orienteering or self.is_pctsp:
             if self.is_vrp:
