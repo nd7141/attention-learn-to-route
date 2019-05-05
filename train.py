@@ -36,7 +36,7 @@ def rollout(model, dataset, opts):
         with torch.no_grad():
             output = model(move_to(bat, opts.device), return_pi=False)
             cost = output[0]
-            if len(output) > 2:
+            #if len(output) > 2:
                 #print()
                 #print(output[0])
                 #print(output[2])
