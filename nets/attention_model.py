@@ -11,6 +11,8 @@ from torch.nn import DataParallel
 from utils.beam_search import CachedLookup
 from utils.functions import sample_many
 
+from utils import gcn_utils
+
 
 def set_decode_type(model, decode_type):
     if isinstance(model, DataParallel):
@@ -109,6 +111,11 @@ class AttentionModel(nn.Module):
 
         else:  # graph
             # Embedding of last node
+
+            self.gcn = gcn_utils.GraphConvolutionBlock(
+                vertex_emb_size, gcn_size, out_size=hid_size, num_convolutions=2,
+                activation=activation, normalize_hid=layernorm
+            )
             step_context_dim = embedding_dim
             dim_vocab = {2: 2, 3: 5, 4: 15, 5: 52, 6: 203, 7: 877, 8: 4140}
             node_dim = dim_vocab[kwargs["steps"]]  # node number for now (TO DO: parametrize later)
@@ -147,15 +154,15 @@ class AttentionModel(nn.Module):
         else:
             embeddings, _ = self.embedder(self._init_embed(input))
 
-        _log_p, pi, entropy = self._inner(input, embeddings)
+        _log_p, pi = self._inner(input, embeddings)
         cost, mask = self.problem.get_costs(input, pi)
         # Log likelyhood is calculated within the model since returning it per action does not work well with
         # DataParallel since sequences can be of different lengths
         ll = self._calc_log_likelihood(_log_p, pi[:, 1:], mask)
         if return_pi:
-            return cost, ll, entropy, pi
+            return cost, ll, pi
 
-        return cost, ll, entropy
+        return cost, ll
 
     def beam_search(self, *args, **kwargs):
         return self.problem.beam_search(*args, **kwargs, model=self)
