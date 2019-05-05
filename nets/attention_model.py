@@ -11,9 +11,6 @@ from torch.nn import DataParallel
 from utils.beam_search import CachedLookup
 from utils.functions import sample_many
 
-from utils import gcn_utils
-
-
 def set_decode_type(model, decode_type):
     if isinstance(model, DataParallel):
         model = model.module
@@ -57,10 +54,6 @@ class AttentionModel(nn.Module):
                  n_heads=8,
                  checkpoint_encoder=False,
                  shrink_size=None,
-                 vertex_emb_size=None,
-                 gcn_size=None,
-                 activation=nn.ELU(),
-                 layernorm=False,
                  **kwargs
                  ):
         super(AttentionModel, self).__init__()
@@ -88,12 +81,6 @@ class AttentionModel(nn.Module):
         self.checkpoint_encoder = checkpoint_encoder
         self.shrink_size = shrink_size
 
-        #GCN
-
-        self.vertex_emb_size = vertex_emb_size = vertex_emb_size or hidden_dim
-        self.gcn_size = gcn_size or hidden_dim
-
-
         # Problem specific context parameters (placeholder and step context dimension)
         if self.is_vrp or self.is_orienteering or self.is_pctsp:
             # Embedding of last node + remaining_capacity / remaining length / remaining prize to collect
@@ -119,15 +106,11 @@ class AttentionModel(nn.Module):
             self.W_placeholder.data.uniform_(-1, 1)  # Placeholder should be in range of activations
 
         else:  # graph
-            self.gcn = gcn_utils.GraphConvolutionBlock(
-                vertex_emb_size or, gcn_size, out_size=embedding_dim, num_convolutions=2,
-                activation=activation, normalize_hid=layernorm
-            )
             step_context_dim = embedding_dim
             dim_vocab = {2: 2, 3: 5, 4: 15, 5: 52, 6: 203, 7: 877, 8: 4140}
             node_dim = dim_vocab[kwargs["steps"]]  # node number for now (TO DO: parametrize later)
 
-        #self.init_embed = nn.Linear(node_dim, embedding_dim)
+        self.init_embed = nn.Linear(node_dim, embedding_dim)
 
 
         self.embedder = GraphAttentionEncoder(
