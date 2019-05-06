@@ -1,5 +1,7 @@
 import argparse
+import math
 import os
+import random
 
 from embeddings.awe import AnonymousWalks as AW
 import networkx as nx
@@ -8,6 +10,7 @@ import time
 from multiprocessing import Pool
 from functools import partial
 import time
+from utils.generate_regular import connect_graph
 
 from utils.data_utils import check_extension, save_dataset
 
@@ -39,18 +42,48 @@ def generate_regular_data(dataset_size, graph_size, degree,
         data.append((embeddings, valids))
     return data
 
-def generate_path_data(dataset_size, graph_size,
-                          steps=3, samples=100):
+def make_bipartite_random_graph(graph_size, p):
+    G = nx.Graph()
+    G.add_nodes_from(range(graph_size))
+    l = int(0.2 * graph_size)
+    V1 = range(l+1)
+    V2 = range(l+1, graph_size)
+    for u in V1:
+        for v in V2:
+            if random.random() < p:
+                G.add_edge(u, v)
+    return G
+
+def generate_data(dataset_size, graph_size,
+                    steps=3, samples=100, type='regular', **kwargs):
     aw = AW()
     data = []
     for _ in range(dataset_size):
-        G = nx.path_graph(graph_size)
+        if type == 'regular':
+            degree = kwargs["degree"]
+            G = make_regular_graph(degree, graph_size)
+        elif type == 'path':
+            G = nx.path_graph(graph_size)
+        elif type == 'er':
+            prob = kwargs["prob"]
+            G = connect_graph(nx.erdos_renyi_graph(graph_size, prob))
+        elif type == 'ba':
+            degree = kwargs["degree"]
+            G = nx.barabasi_albert_graph(graph_size, degree)
+        elif type == 'bipartite':
+            prob = kwargs["prob"]
+            G = connect_graph(make_bipartite_random_graph(graph_size, prob))
+        else:
+            raise ValueError("Unknown type of a graph: {}".format(type))
+
         aw.graph = G
         embeddings = aw.get_sampled_embeddings(steps, samples)
         valids = get_valids(G)
         # data.append((embeddings, valids, np.random.randint(0, G.order(), (1,))))
         data.append((embeddings, valids))
     return data
+
+
 
 def _get_embeddings_and_valids(G, steps, samples):
     aw = AW(G)
@@ -76,6 +109,9 @@ if __name__ == '__main__':
     parser.add_argument("-f", action='store_true', help="Set true to overwrite")
     parser.add_argument('--seed', type=int, default=1234, help="Random seed")
 
+    parser.add_argument("--prob", type=float, default=0.1, help="Probability of an edge in random graph.")
+    parser.add_argument("--graph", type=str, default='regular', help="regular, er, path, ba, bipartite")
+
     opts = parser.parse_args()
 
     # multiprocessing version
@@ -88,6 +124,8 @@ if __name__ == '__main__':
 
     problem = opts.problem
 
+    G = make_bipartite_random_graph(opts.graph_sizes[0], 0.1)
+    c = []
     for graph_size in opts.graph_sizes:
         start = time.time()
         datadir = os.path.join(opts.data_dir, problem)
@@ -103,8 +141,10 @@ if __name__ == '__main__':
 
         np.random.seed(opts.seed)
         if problem == 'lp':
-            dataset = generate_regular_data(opts.dataset_size, graph_size,
-                                            opts.degree, opts.awe_steps, opts.awe_samples)
+            # dataset = generate_data(opts.dataset_size, graph_size,
+            #                         opts.degree, opts.awe_steps, opts.awe_samples)
+            dataset = generate_data(opts.dataset_size, graph_size, type=opts.graph,
+                          degree=opts.degree, prob = opts.prob)
         else:
             assert False, "Unknown problem: {}".format(problem)
 
