@@ -1,3 +1,4 @@
+import subprocess
 from subprocess import check_call, check_output
 import argparse
 import os
@@ -183,7 +184,8 @@ def run_kalp(graph_fn, start_vertex, target_vertex,
              output_filename=None,
              partition_configuration='eco',
              cwd='lpdp',
-             results_filename=None):
+             results_filename=None,
+             path_filename=None):
     
     # installing dependencies if don't exist
     cwd = os.path.abspath(os.path.join(cwd))
@@ -218,20 +220,36 @@ def run_kalp(graph_fn, start_vertex, target_vertex,
     
     graph = os.path.split(graph_fn)[-1]
     print(f"{graph} {start_vertex} {target_vertex}")
-    
-    start = time.time()
-    out = check_output(cmd, shell=True)
-    end = time.time()
 
-    # write results to a file
-    if results_filename:
-        with open(results_filename, 'a+') as f:
-            length = -1
-            if os.path.isfile(output_filename):
-                length = int(check_output(f"wc -l {output_filename} | cut -d' ' -f1", shell=True))
-                check_call(f"rm {output_filename}", shell=True)
-            
-            f.write(f"{graph} {start_vertex} {target_vertex} {end-start} {length}\n")
+    try:
+        start = time.time()
+        out = check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+        end = time.time()
+        print("Finished kalp in {:.2f}".format(end-start))
+
+        if path_filename is not None:
+            save_path(output_filename, path_filename)
+
+        # write results to a file
+        if results_filename:
+            with open(results_filename, 'a+') as f:
+                length = -1
+                if os.path.isfile(output_filename):
+                    length = int(check_output(f"wc -l {output_filename} | cut -d' ' -f1", shell=True))
+                    # check_call(f"rm {output_filename}", shell=True)
+
+                f.write(f"{graph} {start_vertex} {target_vertex} {end - start} {length}\n")
+
+
+    except subprocess.CalledProcessError:
+        print("Failed running command:", cmd)
+
+
+def save_path(path_fn, output_fn):
+    with open(path_fn) as f:
+        path = list(map(lambda x: x.strip(), f.readlines()))
+    with open(output_fn, "a+") as f:
+        f.write(",".join(path) + "\n")
 
             
 
@@ -240,13 +258,19 @@ if __name__ == '__main__':
     # lpdp datasets are heavy
     # download_lpdp_datasets()
 
+
     install_dependencies()
     install_kalp()
 
     cwd = os.path.abspath(os.path.join("lpdp"))
     kalp = os.path.join(cwd, 'kalp')
     graph_fn = f"{kalp}/examples/Grid8x8.graph"
-    run_kalp(graph_fn, 0, 20, output_filename='test.txt', results_filename='results.txt')
+    for target in range(1, 2):
+        run_kalp(graph_fn, 0, 63, output_filename='test.txt',
+                 results_filename='results.txt', path_filename="paths.txt")
+    #
+    # print('ld', os.environ['LD_LIBRARY_PATH'])
+    # print('path', os.environ['PATH'])
     
     # cwd = os.path.abspath(os.path.join("lpdp"))
     # kalp = os.path.join(cwd, 'kalp')
