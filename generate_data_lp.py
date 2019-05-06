@@ -39,6 +39,19 @@ def generate_regular_data(dataset_size, graph_size, degree,
         data.append((embeddings, valids))
     return data
 
+def generate_path_data(dataset_size, graph_size,
+                          steps=3, samples=100):
+    aw = AW()
+    data = []
+    for _ in range(dataset_size):
+        G = nx.path_graph(graph_size)
+        aw.graph = G
+        embeddings = aw.get_sampled_embeddings(steps, samples)
+        valids = get_valids(G)
+        # data.append((embeddings, valids, np.random.randint(0, G.order(), (1,))))
+        data.append((embeddings, valids))
+    return data
+
 def _get_embeddings_and_valids(G, steps, samples):
     aw = AW(G)
     embeddings = aw.get_sampled_embeddings(steps, samples)

@@ -147,15 +147,15 @@ class AttentionModel(nn.Module):
         else:
             embeddings, _ = self.embedder(self._init_embed(input))
 
-        _log_p, pi = self._inner(input, embeddings)
+        _log_p, pi, entropy = self._inner(input, embeddings)
         cost, mask = self.problem.get_costs(input, pi)
         # Log likelyhood is calculated within the model since returning it per action does not work well with
         # DataParallel since sequences can be of different lengths
-        ll = self._calc_log_likelihood(_log_p, pi, mask)
+        ll = self._calc_log_likelihood(_log_p, pi[:, 1:], mask)
         if return_pi:
-            return cost, ll, pi
+            return cost, ll, entropy, pi
 
-        return cost, ll
+        return cost, ll, entropy
 
     def beam_search(self, *args, **kwargs):
         return self.problem.beam_search(*args, **kwargs, model=self)
@@ -239,9 +239,10 @@ class AttentionModel(nn.Module):
     def _inner(self, input, embeddings):
 
         outputs = []
-        sequences = []
 
         state = self.problem.make_state(input)
+
+        sequences = [state.prev_a.flatten()]
 
         # Compute keys, values for the glimpse and keys for the logits once as they can be reused in every step
         fixed = self._precompute(embeddings)
@@ -250,6 +251,9 @@ class AttentionModel(nn.Module):
 
         # Perform decoding steps
         i = 0
+
+        entropy = torch.zeros((batch_size, 1), device=input['valids'].device)
+
         while not (self.shrink_size is None and state.all_finished()):
             if self.shrink_size is not None:
                 unfinished = torch.nonzero(state.get_finished() == 0)
@@ -281,9 +285,13 @@ class AttentionModel(nn.Module):
             # Collect output of step
             outputs.append(log_p[:, 0, :])
             sequences.append(selected)
+
+            log_pe = log_p.clamp(-10,10)
+            entropy += -torch.sum(log_pe.exp() * log_pe, dim=-1)
+
             i += 1
         # Collected lists, return Tensor
-        return torch.stack(outputs, 1), torch.stack(sequences, 1)
+        return torch.stack(outputs, 1), torch.stack(sequences, 1), entropy
 
     def sample_many(self, input, batch_rep=1, iter_rep=1):
         """
