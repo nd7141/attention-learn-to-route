@@ -92,8 +92,8 @@ class LPDataset(Dataset):
                         'valids': torch.ByteTensor(valids),
                         'nodes': torch.FloatTensor(embeddings)
                     }
-                    for start in range(N):
-                        self.data.append(dict(instance, starts=torch.LongTensor([start])))
+
+                    self.data.append(dict(instance, starts=torch.randint(0, N, (1,))))
 
             # if num_samples:
             #     self.data = np.random.choice(self.data, num_samples, replace=True)
