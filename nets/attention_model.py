@@ -255,6 +255,8 @@ class AttentionModel(nn.Module):
 
         batch_size = state.ids.size(0)
 
+        entropy = torch.zeros((batch_size, 1), device=input['valids'].device)
+
         # Perform decoding steps
         i = 0
 
