@@ -36,10 +36,10 @@ def rollout(model, dataset, opts):
         with torch.no_grad():
             output = model(move_to(bat, opts.device), return_pi=False)
             cost = output[0]
-            if len(output) > 2:
-                print()
-                print(output[0])
-                print(output[2])
+            # if len(output) > 2:
+            #     print()
+            #     print(output[0])
+            #     print(output[2])
         return cost.data.cpu()
 
     return torch.cat([
@@ -150,7 +150,7 @@ def train_batch(
     bl_val = move_to(bl_val, opts.device) if bl_val is not None else None
 
     # Evaluate model, get costs and log probabilities
-    cost, log_likelihood = model(x)
+    cost, log_likelihood, entropy = model(x)
 
     # Evaluate baseline, get baseline loss if any (only for critic)
     bl_val, bl_loss = baseline.eval(x, cost) if bl_val is None else (bl_val, 0)
@@ -159,7 +159,8 @@ def train_batch(
 
     # Calculate loss
     reinforce_loss = ((cost - bl_val) * log_likelihood).mean()
-    loss = reinforce_loss + bl_loss
+    entropy_loss = entropy.mean()
+    loss = reinforce_loss + bl_loss - opts.entropy * entropy_loss
 
     # Perform backward pass and optimization step
     optimizer.zero_grad()
@@ -171,4 +172,4 @@ def train_batch(
     # Logging
     if step % int(opts.log_step) == 0:
         log_values(cost, grad_norms, epoch, batch_id, step,
-            log_likelihood, reinforce_loss, bl_loss, tb_logger, opts, extra)
+            log_likelihood, reinforce_loss, bl_loss, entropy_loss, tb_logger, opts, extra)

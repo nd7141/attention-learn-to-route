@@ -291,8 +291,12 @@ class AttentionModel(nn.Module):
             sequences.append(selected)
 
             i += 1
+
+            log_pe = log_p.clamp(-10, 10)
+            entropy += -torch.sum(log_pe.exp() * log_pe, dim=-1)
+
         # Collected lists, return Tensor
-        return torch.stack(outputs, 1), torch.stack(sequences, 1)
+        return torch.stack(outputs, 1), torch.stack(sequences, 1), entropy
 
     def sample_many(self, input, batch_rep=1, iter_rep=1):
         """

@@ -72,6 +72,10 @@ def get_options(args=None):
     parser.add_argument('--degree', type=int, default=5,
                         help='The degree for regular graphs.')
 
+    # entropy
+    parser.add_argument('--entropy', type=float, default=0.0,
+                        help='Entropy coefficient in the loss')
+
     # Misc
     parser.add_argument('--log_step', type=int, default=50, help='Log info every log_step steps')
     parser.add_argument('--log_dir', default='logs', help='Directory to write TensorBoard information to')
