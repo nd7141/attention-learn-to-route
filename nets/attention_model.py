@@ -153,15 +153,15 @@ class AttentionModel(nn.Module):
         else:
             embeddings, _ = self.embedder(self._init_embed(input))
 
-        _log_p, pi = self._inner(input, embeddings)
+        _log_p, pi, entropy = self._inner(input, embeddings)
         cost, mask = self.problem.get_costs(input, pi)
         # Log likelyhood is calculated within the model since returning it per action does not work well with
         # DataParallel since sequences can be of different lengths
         ll = self._calc_log_likelihood(_log_p, pi[:, 1:], mask)
         if return_pi:
-            return cost, ll, pi
+            return cost, ll, entropy, pi
 
-        return cost, ll
+        return cost, ll, entropy
 
     def beam_search(self, *args, **kwargs):
         return self.problem.beam_search(*args, **kwargs, model=self)
