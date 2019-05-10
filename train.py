@@ -36,10 +36,10 @@ def rollout(model, dataset, opts):
         with torch.no_grad():
             output = model(move_to(bat, opts.device), return_pi=False)
             cost = output[0]
-            #if len(output) > 2:
-                #print()
-                #print(output[0])
-                #print(output[2])
+            # if len(output) > 3:
+            #     print()
+            #     print(output[0])
+            #     print(output[-1])
         return cost.data.cpu()
 
     return torch.cat([
@@ -85,7 +85,11 @@ def train_epoch(model, optimizer, baseline, lr_scheduler,
     training_dataset = baseline.wrap_dataset(dataset)
     training_dataloader = DataLoader(training_dataset, batch_size=opts.batch_size, num_workers=1)
 
-    step = epoch * (len(training_dataset) // opts.batch_size)
+    if len(training_dataset) <= opts.batch_size:
+        step = epoch
+    else:
+        step = epoch * (len(training_dataset) // opts.batch_size + 1)
+
     if not opts.no_tensorboard:
         tb_logger.log_value('learnrate_pg0', optimizer.param_groups[0]['lr'], epoch)
 
