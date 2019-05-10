@@ -185,10 +185,10 @@ def run_kalp(graph_fn, start_vertex, target_vertex,
              partition_configuration='eco',
              cwd='lpdp',
              results_filename=None,
-             path_filename=None):
+             routes_filename=None):
     
     # installing dependencies if don't exist
-    cwd = os.path.abspath(os.path.join(cwd))
+    # cwd = os.path.abspath(os.path.join(cwd))
     argtable2 = os.path.join(cwd, 'argtable2')
     tbb = os.path.join(cwd, 'tbb')
     scons = os.path.join(cwd, 'scons')
@@ -199,7 +199,7 @@ def run_kalp(graph_fn, start_vertex, target_vertex,
         
     # prepare kalp to run 
     update_environ()
-    cwd = os.path.abspath(os.path.join(cwd))
+    # cwd = os.path.abspath(os.path.join(cwd))
     os.makedirs(cwd, exist_ok=True)
     
     kalp = os.path.join(cwd, 'kalp')
@@ -211,10 +211,7 @@ def run_kalp(graph_fn, start_vertex, target_vertex,
         compile_kalp()
     
     # run kalp
-    cmd = f'''{deploy}/kalp {graph_fn} \
-            --start_vertex={start_vertex} \
-            --target_vertex={target_vertex} \
-            --partition_configuration={partition_configuration}'''
+    cmd = f'''{deploy}/kalp {graph_fn} --start_vertex={start_vertex} --target_vertex={target_vertex} --partition_configuration={partition_configuration}'''
     if output_filename:
         cmd += f" --output_filename={output_filename}"
     
@@ -227,8 +224,8 @@ def run_kalp(graph_fn, start_vertex, target_vertex,
         end = time.time()
         print("Finished kalp in {:.2f}".format(end-start))
 
-        if path_filename is not None:
-            save_path(output_filename, path_filename)
+        if routes_filename is not None:
+            save_path(output_filename, routes_filename)
 
         # write results to a file
         if results_filename:
@@ -236,13 +233,16 @@ def run_kalp(graph_fn, start_vertex, target_vertex,
                 length = -1
                 if os.path.isfile(output_filename):
                     length = int(check_output(f"wc -l {output_filename} | cut -d' ' -f1", shell=True))
-                    # check_call(f"rm {output_filename}", shell=True)
+                    check_call(f"rm {output_filename}", shell=True)
 
                 f.write(f"{graph} {start_vertex} {target_vertex} {end - start} {length}\n")
 
 
     except subprocess.CalledProcessError:
         print("Failed running command:", cmd)
+
+    except Exception as e:
+        print("Somethign went wrong", e)
 
 
 def save_path(path_fn, output_fn):
@@ -262,15 +262,22 @@ if __name__ == '__main__':
     install_dependencies()
     install_kalp()
 
-    cwd = os.path.abspath(os.path.join("lpdp"))
+    fns = ["1ba.dimacs", "1bipartite.dimacs", "1bp_seed1234.dimacs",
+           "1er.dimacs",
+           "1path.dimacs", "1regular.dimacs"]
+
+    cwd = "lpdp"
     kalp = os.path.join(cwd, 'kalp')
-    graph_fn = f"{kalp}/examples/Grid8x8.graph"
-    for target in range(1, 2):
-        run_kalp(graph_fn, 0, 63, output_filename='test.txt',
-                 results_filename='results.txt', path_filename="paths.txt")
-    #
-    # print('ld', os.environ['LD_LIBRARY_PATH'])
-    # print('path', os.environ['PATH'])
+
+    i = 2
+    fn = fns[i]
+    graph_fn = f"{kalp}/examples/{fn}"
+    for start in range(19):
+        for target in range(start+1, 20):
+            run_kalp(graph_fn, start, target, output_filename='test.txt',
+                     results_filename=f"{fn.split('.')[0]}.results",
+                     routes_filename=f"{fn.split('.')[0]}.routes")
+
     
     # cwd = os.path.abspath(os.path.join("lpdp"))
     # kalp = os.path.join(cwd, 'kalp')
