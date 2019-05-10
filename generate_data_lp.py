@@ -9,6 +9,7 @@ import numpy as np
 import time
 from multiprocessing import Pool
 from functools import partial
+from collections import defaultdict as ddict
 import time
 from utils.generate_regular import connect_graph
 
@@ -76,6 +77,9 @@ def generate_data(dataset_size, graph_size,
         else:
             raise ValueError("Unknown type of a graph: {}".format(type))
 
+        if kwargs["save_dimacs"]:
+            save_dimacs(G, f"{kwargs['save_dimacs']}")
+
         aw.graph = G
         embeddings = aw.get_sampled_embeddings(steps, samples)
         valids = get_valids(G)
@@ -83,7 +87,20 @@ def generate_data(dataset_size, graph_size,
         data.append((embeddings, valids))
     return data
 
-
+def save_dimacs(graph, fn):
+    with open(fn, 'w+') as f:
+        f.write(f"p lp {graph.order()} {graph.size()}\n")
+        mapping = ddict(int)
+        count = 1
+        for u in graph:
+            if u not in mapping:
+                mapping[u] = count
+                count += 1
+            for v in graph[u]:
+                if v not in mapping:
+                    mapping[v] = count
+                    count += 1
+                f.write(f"a {mapping[u]} {mapping[v]} 1\n")
 
 def _get_embeddings_and_valids(G, steps, samples):
     aw = AW(G)
@@ -111,7 +128,7 @@ if __name__ == '__main__':
 
     parser.add_argument("--prob", type=float, default=0.1, help="Probability of an edge in random graph.")
     parser.add_argument("--graph", type=str, default='regular', help="regular, er, path, ba, bipartite")
-
+    parser.add_argument("--save_dimacs", type=str, default=None, help="Filename of dimacs graph")
     opts = parser.parse_args()
 
     # multiprocessing version
@@ -144,7 +161,8 @@ if __name__ == '__main__':
             # dataset = generate_data(opts.dataset_size, graph_size,
             #                         opts.degree, opts.awe_steps, opts.awe_samples)
             dataset = generate_data(opts.dataset_size, graph_size, type=opts.graph,
-                          degree=opts.degree, prob = opts.prob)
+                          degree=opts.degree, prob = opts.prob,
+                                    save_dimacs = opts.save_dimacs)
         else:
             assert False, "Unknown problem: {}".format(problem)
 
