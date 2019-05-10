@@ -93,10 +93,11 @@ class LPDataset(Dataset):
                         'nodes': torch.FloatTensor(embeddings)
                     }
 
-                    self.data.append(dict(instance, starts=torch.randint(0, N, (1,))))
+                    # self.data.append(dict(instance, starts=torch.randint(0, N, (1,))))
 
-            # if num_samples:
-            #     self.data = np.random.choice(self.data, num_samples, replace=True)
+                    for start in range(N):
+                        self.data.append(dict(instance, starts=torch.LongTensor([start])))
+
 
         else:
             # Generate data with AW embeddings

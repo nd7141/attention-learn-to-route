@@ -5,7 +5,7 @@ fns = ["1ba.dimacs", "1bipartite.dimacs", "1bp_seed1234.dimacs",
            "1path.dimacs", "1regular.dimacs"]
 
 def parse_fn(fn):
-    fn = fn.split('.')[0] + '.results'
+    fn = 'results/' + fn.split('.')[0] + '.results'
     with open(fn) as f:
         lines = f.readlines()
 
@@ -23,7 +23,7 @@ def parse_fn(fn):
     return fn, opts, np.mean(list(opts.values()))
 
 def opt_routes(fn):
-    fn = fn.split('.')[0] + '.routes'
+    fn = 'results/' + fn.split('.')[0] + '.routes'
     with open(fn) as f:
         lines = f.readlines()
     opts = dict()
@@ -42,8 +42,9 @@ def opt_routes(fn):
 
     return opts, maxs
 
-i = 2
-fn, opts, m = parse_fn(fns[i])
-routes, maxs = opt_routes(fns[i])
+for i in range(6):
+    fn, opts, m = parse_fn(fns[i])
+    print(fn, m)
+# routes, maxs = opt_routes(fns[i])
 
 console = []

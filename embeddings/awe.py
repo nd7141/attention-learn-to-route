@@ -122,6 +122,24 @@ class AnonymousWalks(object):
             node = v
         return tuple(walk)
 
+    def long_random_walk_node(self, node):
+        walk = [node]
+        visited = set([node])
+        while True:
+            r = random.uniform(0, 1)
+            low = 0
+            for v in self.rw_graph[node]:
+                p = self.rw_graph[node][v]['weight']
+                if r <= low + p and v not in visited:
+                    visited.add(v)
+                    node = v
+                    walk.append(node)
+                    break
+                low += p
+            else:
+                break
+        return tuple(walk)
+
     def _anonymous_walk(self, node, steps, labels=None):
         '''Creates anonymous walk for a node.'''
         if labels is None:
