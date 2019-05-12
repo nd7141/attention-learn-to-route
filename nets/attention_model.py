@@ -149,9 +149,11 @@ class AttentionModel(nn.Module):
         :return:
         """
         if self.checkpoint_encoder:
-            embeddings, _ = checkpoint(self.embedder, self._init_embed(input))
+            input_embed = self._init_embed(input)
+            embeddings, _ = checkpoint(self.embedder, input_embed)
         else:
-            embeddings, _ = self.embedder(self._init_embed(input))
+            input_embed = self._init_embed(input)
+            embeddings, _ = self.embedder(input_embed)
 
         _log_p, pi, entropy = self._inner(input, embeddings)
         cost, mask = self.problem.get_costs(input, pi)

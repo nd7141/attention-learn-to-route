@@ -122,6 +122,24 @@ class AnonymousWalks(object):
             node = v
         return tuple(walk)
 
+    def long_random_walk_node(self, node):
+        walk = [node]
+        visited = set([node])
+        while True:
+            r = random.uniform(0, 1)
+            low = 0
+            for v in self.rw_graph[node]:
+                p = self.rw_graph[node][v]['weight']
+                if r <= low + p and v not in visited:
+                    visited.add(v)
+                    node = v
+                    walk.append(node)
+                    break
+                low += p
+            else:
+                break
+        return tuple(walk)
+
     def _anonymous_walk(self, node, steps, labels=None):
         '''Creates anonymous walk for a node.'''
         if labels is None:
@@ -133,16 +151,72 @@ class AnonymousWalks(object):
         if steps not in self.paths:
             self._all_paths(steps, True)
         aws = self.paths[steps]
+        pos = dict([(aw, i) for i, aw in enumerate(aws)])  # get positions of each aw
         # get anonymous walks
         for i in range(self.rw_graph.order()):
             walks[i] = Counter(map(hash, [self._anonymous_walk(i, steps) for _ in range(samples)]))
-        pos = dict([(aw, i) for i, aw in enumerate(aws)]) # get positions of each aw
         # make embeddings from the counts
         embeddings = dict()
         for i in range(self.rw_graph.order()):
             embeddings[i] = np.zeros(len(aws))
             for aw, count in walks[i].items():
                 embeddings[i][pos[aw]] = count/samples
+
+        return np.stack(list(embeddings.values()))
+
+    def _2aw(self, walk):
+        '''Converts a random walk to anonymous walks.'''
+        idx = 0
+        pattern = []
+        d = dict()
+        for node in walk:
+            if node not in d:
+                d[node] = idx
+                idx += 1
+            pattern.append(d[node])
+        return hash(tuple(pattern))
+
+    def get_exact_embeddings(self, steps):
+        '''Find anonymous walk distribution exactly.
+        Calculates probabilities from each node to all other nodes within n steps.
+        Running time is the O(# number of random walks) <= O(n*d_max^steps).
+        labels, possible values None (no labels), 'edges', 'nodes', 'edges_nodes'.
+        steps is the number of steps.
+        Returns dictionary pattern to probability.
+        '''
+        self.create_random_walk_graph()
+        walks = dict()
+        all_walks = []
+
+        def patterns(RW, node, remaining_steps, walks, current_walk=None, current_dist=1.):
+            if current_walk is None:
+                current_walk = [node]
+            if len(current_walk) > 1:  # walks with more than 1 edge
+                all_walks.append(current_walk)
+                w2p = self._2aw(current_walk)
+                walks[w2p] = walks.get(w2p, 0) + current_dist
+            if remaining_steps > 0:
+                for v in RW[node]:
+                    patterns(RW, v, remaining_steps - 1, walks, current_walk + [v], current_dist * RW[node][v]['weight'])
+
+        node_walks = dict()
+        for node in self.rw_graph:
+            walks = dict()
+            patterns(self.rw_graph, node, steps, walks)
+            node_walks[node] = walks
+
+        node_pos = dict([(node, i) for i, node in enumerate(sorted(self.rw_graph))])
+
+        self._all_paths(steps, True)
+        aws = self.paths[steps]
+        pos = dict([(aw, i) for i, aw in enumerate(sorted(aws))])  # get positions of each aw
+
+        embeddings = dict()
+        for node in self.rw_graph:
+            embeddings[node_pos[node]] = np.zeros(len(aws))
+            for aw, count in node_walks[node].items():
+                if aw in pos:
+                    embeddings[node_pos[node]][pos[aw]] = count
 
         return np.stack(list(embeddings.values()))
 
@@ -200,7 +274,8 @@ if __name__ == '__main__':
 
     for i in range(1):
         start = time.time()
-        embeddings = aw.get_sampled_embeddings(steps=3, samples = 100)
+        embeddings = aw.get_exact_embeddings(steps=2)
+        print(embeddings)
         print(time.time() - start)
 
     console = []

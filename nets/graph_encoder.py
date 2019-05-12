@@ -118,12 +118,22 @@ class Normalization(nn.Module):
     def __init__(self, embed_dim, normalization='batch'):
         super(Normalization, self).__init__()
 
+        graph_size = 20
+
         normalizer_class = {
-            'batch': nn.BatchNorm1d,
-            'instance': nn.InstanceNorm1d
+            'batch': nn.BatchNorm1d(embed_dim, momentum=1), #, track_running_stats=False)
+            'batch2': nn.BatchNorm1d(graph_size, momentum=1),
+            'batch3': nn.BatchNorm1d(embed_dim, momentum=1),
+            'instance': nn.InstanceNorm1d(embed_dim),
+            'instance2': nn.InstanceNorm1d(graph_size),
+            'layer': nn.LayerNorm([graph_size, embed_dim]), # TODO: use size of instances
+            'layer2': nn.LayerNorm([embed_dim, graph_size]),
+            'no': nn.Sequential()
         }.get(normalization, None)
 
-        self.normalizer = normalizer_class(embed_dim, affine=True)
+        self.normalizer = normalizer_class
+
+        self.normalization = normalization
 
         # Normalization by default initializes affine parameters with bias 0 and weight unif(0,1) which is too large!
         # self.init_parameters()
@@ -136,10 +146,30 @@ class Normalization(nn.Module):
 
     def forward(self, input):
 
-        if isinstance(self.normalizer, nn.BatchNorm1d):
+        if self.normalization == 'batch':
+            # legacy batch norm
             return self.normalizer(input.view(-1, input.size(-1))).view(*input.size())
-        elif isinstance(self.normalizer, nn.InstanceNorm1d):
+        elif self.normalization == 'batch2':
+            # batch norm that normalizes embedding of each node independently
+            return self.normalizer(input)
+        elif self.normalization == 'batch3':
+            # batch norm that normalizes dim cell across all nodes and batches
+            # should be the same as batch
             return self.normalizer(input.permute(0, 2, 1)).permute(0, 2, 1)
+        elif self.normalization == 'instance':
+            # legacy instance norm
+            return self.normalizer(input.permute(0, 2, 1)).permute(0, 2, 1)
+        elif self.normalization == 'instance2':
+            # instance norm that normalizes each embedding independently of all batch
+            return self.normalizer(input)
+        elif self.normalization == 'layer':
+            # layer normalization
+            return self.normalizer(input)
+        elif self.normalization == 'layer2':
+            # layer normalization
+            return self.normalizer(input.permute(0, 2, 1)).permute(0, 2, 1)
+        elif self.normalization == 'no':
+            return self.normalizer(input)
         else:
             assert self.normalizer is None, "Unknown normalizer type"
             return input

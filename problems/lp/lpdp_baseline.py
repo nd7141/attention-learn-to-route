@@ -1,3 +1,4 @@
+import subprocess
 from subprocess import check_call, check_output
 import argparse
 import os
@@ -183,10 +184,11 @@ def run_kalp(graph_fn, start_vertex, target_vertex,
              output_filename=None,
              partition_configuration='eco',
              cwd='lpdp',
-             results_filename=None):
+             results_filename=None,
+             routes_filename=None):
     
     # installing dependencies if don't exist
-    cwd = os.path.abspath(os.path.join(cwd))
+    # cwd = os.path.abspath(os.path.join(cwd))
     argtable2 = os.path.join(cwd, 'argtable2')
     tbb = os.path.join(cwd, 'tbb')
     scons = os.path.join(cwd, 'scons')
@@ -197,7 +199,7 @@ def run_kalp(graph_fn, start_vertex, target_vertex,
         
     # prepare kalp to run 
     update_environ()
-    cwd = os.path.abspath(os.path.join(cwd))
+    # cwd = os.path.abspath(os.path.join(cwd))
     os.makedirs(cwd, exist_ok=True)
     
     kalp = os.path.join(cwd, 'kalp')
@@ -209,29 +211,45 @@ def run_kalp(graph_fn, start_vertex, target_vertex,
         compile_kalp()
     
     # run kalp
-    cmd = f'''{deploy}/kalp {graph_fn} \
-            --start_vertex={start_vertex} \
-            --target_vertex={target_vertex} \
-            --partition_configuration={partition_configuration}'''
+    cmd = f'''{deploy}/kalp {graph_fn} --start_vertex={start_vertex} --target_vertex={target_vertex} --partition_configuration={partition_configuration}'''
     if output_filename:
         cmd += f" --output_filename={output_filename}"
     
     graph = os.path.split(graph_fn)[-1]
     print(f"{graph} {start_vertex} {target_vertex}")
-    
-    start = time.time()
-    out = check_output(cmd, shell=True)
-    end = time.time()
 
-    # write results to a file
-    if results_filename:
-        with open(results_filename, 'a+') as f:
-            length = -1
-            if os.path.isfile(output_filename):
-                length = int(check_output(f"wc -l {output_filename} | cut -d' ' -f1", shell=True))
-                check_call(f"rm {output_filename}", shell=True)
-            
-            f.write(f"{graph} {start_vertex} {target_vertex} {end-start} {length}\n")
+    try:
+        start = time.time()
+        out = check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+        end = time.time()
+        print("Finished kalp in {:.2f}".format(end-start))
+
+        if routes_filename is not None:
+            save_path(output_filename, routes_filename)
+
+        # write results to a file
+        if results_filename:
+            with open(results_filename, 'a+') as f:
+                length = -1
+                if os.path.isfile(output_filename):
+                    length = int(check_output(f"wc -l {output_filename} | cut -d' ' -f1", shell=True))
+                    check_call(f"rm {output_filename}", shell=True)
+
+                f.write(f"{graph} {start_vertex} {target_vertex} {end - start} {length}\n")
+
+
+    except subprocess.CalledProcessError:
+        print("Failed running command:", cmd)
+
+    except Exception as e:
+        print("Somethign went wrong", e)
+
+
+def save_path(path_fn, output_fn):
+    with open(path_fn) as f:
+        path = list(map(lambda x: x.strip(), f.readlines()))
+    with open(output_fn, "a+") as f:
+        f.write(",".join(path) + "\n")
 
             
 
@@ -240,13 +258,26 @@ if __name__ == '__main__':
     # lpdp datasets are heavy
     # download_lpdp_datasets()
 
+
     install_dependencies()
     install_kalp()
 
-    cwd = os.path.abspath(os.path.join("lpdp"))
+    fns = ["1ba.dimacs", "1bipartite.dimacs", "1bp_seed1234.dimacs",
+           "1er.dimacs",
+           "1path.dimacs", "1regular.dimacs"]
+
+    cwd = "lpdp"
     kalp = os.path.join(cwd, 'kalp')
-    graph_fn = f"{kalp}/examples/Grid8x8.graph"
-    run_kalp(graph_fn, 0, 20, output_filename='test.txt', results_filename='results.txt')
+
+    i = 2
+    fn = fns[i]
+    graph_fn = f"{kalp}/examples/{fn}"
+    for start in range(19):
+        for target in range(start+1, 20):
+            run_kalp(graph_fn, start, target, output_filename='test.txt',
+                     results_filename=f"{fn.split('.')[0]}.results",
+                     routes_filename=f"{fn.split('.')[0]}.routes")
+
     
     # cwd = os.path.abspath(os.path.join("lpdp"))
     # kalp = os.path.join(cwd, 'kalp')
