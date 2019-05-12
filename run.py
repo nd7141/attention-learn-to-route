@@ -3,6 +3,7 @@
 import os
 import json
 import pprint as pp
+import time
 
 import torch
 import torch.optim as optim
@@ -173,7 +174,7 @@ def run(opts):
         validate(model, val_dataset, opts)
     else:
         extra = {'updates': 0}
-
+        start = time.time()
         for epoch in range(opts.epoch_start, opts.epoch_start + opts.n_epochs):
 
             train_epoch(
@@ -188,7 +189,8 @@ def run(opts):
                 opts,
                 extra
             )
-
+        finish = time.time()
+        print("Took {:.2f} sec for {} epochs".format(finish-start, opts.n_epochs))
 
 if __name__ == "__main__":
     run(get_options())

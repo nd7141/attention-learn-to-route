@@ -110,7 +110,7 @@ class AttentionModel(nn.Module):
         else:  # graph
             # Embedding of last node
             step_context_dim = embedding_dim
-            dim_vocab = {2: 2, 3: 5, 4: 15, 5: 52, 6: 203, 7: 877, 8: 4140}
+            dim_vocab = {1: 1, 2: 2, 3: 5, 4: 15, 5: 52, 6: 203, 7: 877, 8: 4140}
             node_dim = dim_vocab[kwargs["steps"]]  # node number for now (TO DO: parametrize later)
 
         self.init_embed = nn.Linear(node_dim, embedding_dim)
@@ -143,9 +143,11 @@ class AttentionModel(nn.Module):
         :return:
         """
         if self.checkpoint_encoder:
-            embeddings, _ = checkpoint(self.embedder, self._init_embed(input))
+            input_embed = self._init_embed(input)
+            embeddings, _ = checkpoint(self.embedder, input_embed)
         else:
-            embeddings, _ = self.embedder(self._init_embed(input))
+            input_embed = self._init_embed(input)
+            embeddings, _ = self.embedder(input_embed)
 
         _log_p, pi, entropy = self._inner(input, embeddings)
         cost, mask = self.problem.get_costs(input, pi)
