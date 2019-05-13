@@ -36,6 +36,8 @@ def rollout(model, dataset, opts):
         with torch.no_grad():
             output = model(move_to(bat, opts.device), return_pi=False)
             cost = output[0]
+            # print('Dataset on valid', bat)
+            # print('Cost on valid', cost)
             if len(output) > 3:
                 print()
                 print(output[0])
@@ -163,6 +165,7 @@ def train_batch(
 
     # Evaluate model, get costs and log probabilities
     cost, log_likelihood, entropy = model(x)
+    # print('Cost on train', cost)
 
     # Evaluate baseline, get baseline loss if any (only for critic)
     bl_val, bl_loss = baseline.eval(x, cost) if bl_val is None else (bl_val, 0)

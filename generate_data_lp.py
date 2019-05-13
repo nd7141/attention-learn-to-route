@@ -60,6 +60,8 @@ def generate_data(dataset_size, graph_size,
     aw = AW()
     data = []
     for _ in range(dataset_size):
+        if not _ % 100:
+            print(_)
         if type == 'regular':
             degree = kwargs["degree"]
             G = make_regular_graph(degree, graph_size)
@@ -81,7 +83,9 @@ def generate_data(dataset_size, graph_size,
             save_dimacs(G, f"{kwargs['save_dimacs']}")
 
         aw.graph = G
-        embeddings = aw.get_sampled_embeddings(steps, samples)
+        # embeddings = aw.get_sampled_embeddings(steps, samples)
+        embeddings = aw.get_exact_embeddings(steps)
+        # embeddings = np.stack(map(lambda x: [x[1]], list(G.degree())))
         valids = get_valids(G)
         # data.append((embeddings, valids, np.random.randint(0, G.order(), (1,))))
         data.append((embeddings, valids))
@@ -109,6 +113,15 @@ def _get_embeddings_and_valids(G, steps, samples):
     return (embeddings, valids)
 
 if __name__ == '__main__':
+
+    # import pickle
+    # fn = "regex_valid"
+    # with open(f'data/lp/lp100_{fn}_seed1.pkl', 'rb') as f:
+    #     data = pickle.load(f)
+    # emb, valids = data[0]
+    # G = nx.from_numpy_matrix(1 - valids)
+    # save_dimacs(G, "problems/lp/lpdp/kalp/examples/lp100_regex_valid_seed1.dimacs")
+    # raise Exception
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--filename", help="Filename of the dataset to create (ignores datadir)")
@@ -159,10 +172,11 @@ if __name__ == '__main__':
         np.random.seed(opts.seed)
         if problem == 'lp':
             # dataset = generate_data(opts.dataset_size, graph_size,
-            #                         opts.degree, opts.awe_steps, opts.awe_samples)
+            #                         opts.degree, opxts.awe_steps, opts.awe_samples)
             dataset = generate_data(opts.dataset_size, graph_size, type=opts.graph,
+                                    steps=opts.awe_steps, samples=opts.awe_samples,
                           degree=opts.degree, prob = opts.prob,
-                                    save_dimacs = opts.save_dimacs)
+                          save_dimacs = opts.save_dimacs)
         else:
             assert False, "Unknown problem: {}".format(problem)
 

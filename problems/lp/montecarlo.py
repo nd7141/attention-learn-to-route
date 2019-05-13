@@ -12,10 +12,13 @@ import numpy as np
 
 if __name__ == '__main__':
 
-    for graph in ["reg", "path", "bp", "ba", "er"]:
+    for graph in range(1):
 
-        with open(f'../../data/lp/lp20_1{graph}_seed1.pkl', 'rb') as f:
+        fn = "regex_valid"
+        with open(f'../../data/lp/lp100_{fn}_seed1.pkl', 'rb') as f:
             data = pickle.load(f)
+
+
 
         embs, valids = data[0]
         G = nx.from_numpy_matrix(1 - valids)
@@ -29,7 +32,7 @@ if __name__ == '__main__':
         for start in range(20):
             walks = []
             ls = []
-            for i in range(10000):
+            for i in range(100000):
                 walk = aw.long_random_walk_node(start)
                 walks.append(walk)
                 ls.append(len(walk) - 1)

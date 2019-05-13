@@ -219,6 +219,7 @@ def run_kalp(graph_fn, start_vertex, target_vertex,
     print(f"{graph} {start_vertex} {target_vertex}")
 
     try:
+        print(cmd)
         start = time.time()
         out = check_output(cmd, shell=True, stderr=subprocess.STDOUT)
         end = time.time()
@@ -262,21 +263,24 @@ if __name__ == '__main__':
     install_dependencies()
     install_kalp()
 
-    fns = ["1ba.dimacs", "1bipartite.dimacs", "1bp_seed1234.dimacs",
-           "1er.dimacs",
-           "1path.dimacs", "1regular.dimacs"]
+    # fns = ["1ba.dimacs", "1bipartite.dimacs", "1bp_seed1234.dimacs",
+    #        "1er.dimacs",
+    #        "1path.dimacs", "1regular.dimacs"]
+
 
     cwd = "lpdp"
     kalp = os.path.join(cwd, 'kalp')
 
     i = 2
-    fn = fns[i]
+    # fn = fns[i]
+    fn = "lp100_regex_valid_seed1.dimacs"
     graph_fn = f"{kalp}/examples/{fn}"
-    for start in range(19):
-        for target in range(start+1, 20):
-            run_kalp(graph_fn, start, target, output_filename='test.txt',
+    for start in range(99):
+        for target in range(start+1, 100):
+            run_kalp(graph_fn, 0, 99, output_filename='test.txt',
                      results_filename=f"{fn.split('.')[0]}.results",
-                     routes_filename=f"{fn.split('.')[0]}.routes")
+                     routes_filename=f"{fn.split('.')[0]}.routes",
+                     partition_configuration="strong")
 
     
     # cwd = os.path.abspath(os.path.join("lpdp"))
