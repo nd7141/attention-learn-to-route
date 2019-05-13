@@ -144,6 +144,8 @@ class CriticBaseline(Baseline):
     def eval(self, x, c):
         v = self.critic(x)
         # Detach v since actor should not backprop through baseline, only for loss
+        print(v, v.size())
+        print(c, c.size())
         return v.detach(), F.mse_loss(v, c.detach())
 
     def get_learnable_parameters(self):

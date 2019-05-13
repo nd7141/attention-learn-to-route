@@ -74,4 +74,4 @@ class CriticNetworkLP(nn.Module):
         :return:
         """
         _, graph_embeddings = self.encoder(inputs['nodes'])
-        return self.value_head(graph_embeddings)
+        return self.value_head(graph_embeddings).flatten()
