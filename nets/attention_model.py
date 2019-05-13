@@ -57,7 +57,7 @@ class AttentionModel(nn.Module):
                  n_heads=8,
                  checkpoint_encoder=False,
                  shrink_size=None,
-                 gcn_size=10,
+                 encoder_type="gan",
                  **kwargs
                  ):
         super(AttentionModel, self).__init__()
@@ -75,7 +75,6 @@ class AttentionModel(nn.Module):
         self.is_tsp = problem.NAME == 'tsp'
         self.is_lp = problem.NAME == 'lp'
 
-
         self.tanh_clipping = tanh_clipping
 
         self.mask_inner = mask_inner
@@ -85,6 +84,16 @@ class AttentionModel(nn.Module):
         self.n_heads = n_heads
         self.checkpoint_encoder = checkpoint_encoder
         self.shrink_size = shrink_size
+
+        self.encoder_type = encoder_type
+
+        if self.encoder_type == "gan":
+            self.embedder = GraphAttentionEncoder(
+                n_heads=n_heads,
+                embed_dim=embedding_dim,
+                n_layers=self.n_encode_layers,
+                normalization=normalization
+            )
 
         # Problem specific context parameters (placeholder and step context dimension)
         if self.is_vrp or self.is_orienteering or self.is_pctsp:
@@ -111,22 +120,15 @@ class AttentionModel(nn.Module):
             self.W_placeholder.data.uniform_(-1, 1)  # Placeholder should be in range of activations
 
         else:  # graph and lp
-            dim_vocab = {2: 2, 3: 5, 4: 15, 5: 52, 6: 203, 7: 877, 8: 4140}
-            node_dim = dim_vocab[kwargs["steps"]]
-            self.gcn = gcn_utils.GraphConvolutionBlock(node_dim,
+            node_dim = 10
+            print("Initializing GCN...")
+            self.embedder = gcn_utils.GraphConvolutionBlock(node_dim,
                 self.hidden_dim, out_size=self.embedding_dim, num_convolutions=2,
-                activation=nn.ELU(), normalize_hid=False
-            )
+                activation=nn.ELU(), residual=False, normalize_hid=True, normalize_out=True)
+
             step_context_dim = embedding_dim
 
         self.init_embed = nn.Linear(node_dim, embedding_dim)
-
-        self.embedder = GraphAttentionEncoder(
-            n_heads=n_heads,
-            embed_dim=embedding_dim,
-            n_layers=self.n_encode_layers,
-            normalization=normalization
-        )
 
         # For each node we compute (glimpse key, glimpse value, logit key) so 3 * embedding_dim
         self.project_node_embeddings = nn.Linear(embedding_dim, 3 * embedding_dim, bias=False)
@@ -153,7 +155,7 @@ class AttentionModel(nn.Module):
             embeddings, _ = checkpoint(self.embedder, input_embed)
         else:
             input_embed = self._init_embed(input)
-            embeddings, _ = self.embedder(input_embed)
+            embeddings, _ = self.embedder(input_embed, 1 - input['valids'])
 
         _log_p, pi, entropy = self._inner(input, embeddings)
         cost, mask = self.problem.get_costs(input, pi)
@@ -221,7 +223,10 @@ class AttentionModel(nn.Module):
     def _init_embed(self, input):
 
         if self.is_graph or self.is_lp:
-            return self.gcn(input['nodes'], 1 - input['valids'])
+            batch_size, num_nodes, node_dim = input['nodes'].size()
+            nodes = torch.arange(num_nodes, dtype=torch.int64, device=input['nodes'].device)
+            indices = torch.cat(batch_size * [nodes]).view(batch_size, num_nodes, 1)
+            return gcn_utils.encode_indices(indices, 10, scale=1.0, dtype=torch.float32).squeeze(-2)
 
         if self.is_vrp or self.is_orienteering or self.is_pctsp:
             if self.is_vrp:

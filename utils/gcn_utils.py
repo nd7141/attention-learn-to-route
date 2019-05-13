@@ -67,5 +67,18 @@ class GraphConvolutionBlock(nn.Module):
             hid += inp
         if hasattr(self, 'out_norm'):
             hid = self.out_norm(hid)
-        return hid
+        return hid, hid.mean(dim=1)
 
+def encode_indices(indices, size, scale=1.0, dtype=torch.float32):
+    """
+    Uses sinusoid position encoding to represent indices
+    :param indices: integer tensor [*input_dims]
+    :param size: output encoding size
+    :returns: encoded tensor [*input_dims, size]
+    """
+    unit_index = torch.arange(size, dtype=dtype, device=indices.device)
+    unit_index = unit_index.view(*([1] * len(indices.shape) + [size]))
+    indices = indices[..., None].to(dtype=dtype)
+    phase = indices / 10000.0 ** (float(scale) * (unit_index // 2) / size)
+    encoding = (unit_index % 2) * torch.sin(phase) + (1 - unit_index % 2) * torch.cos(phase)
+    return encoding
