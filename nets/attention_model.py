@@ -120,12 +120,8 @@ class AttentionModel(nn.Module):
             self.W_placeholder.data.uniform_(-1, 1)  # Placeholder should be in range of activations
 
         else:  # graph and lp
-            node_dim = 10
-            print("Initializing GCN...")
-            self.embedder = gcn_utils.GraphConvolutionBlock(node_dim,
-                self.hidden_dim, out_size=self.embedding_dim, num_convolutions=2,
-                activation=nn.ELU(), residual=False, normalize_hid=True, normalize_out=True)
-
+            dim_vocab = {1: 1, 2: 2, 3: 5, 4: 15, 5: 52, 6: 203, 7: 877, 8: 4140}
+            node_dim = dim_vocab[kwargs["steps"]]
             step_context_dim = embedding_dim
 
         self.init_embed = nn.Linear(node_dim, embedding_dim)
@@ -154,8 +150,7 @@ class AttentionModel(nn.Module):
             input_embed = self._init_embed(input)
             embeddings, _ = checkpoint(self.embedder, input_embed)
         else:
-            input_embed = self._init_embed(input)
-            embeddings, _ = self.embedder(input_embed, 1 - input['valids'])
+            embeddings = self._init_embed(input)
 
         _log_p, pi, entropy = self._inner(input, embeddings)
         cost, mask = self.problem.get_costs(input, pi)
@@ -223,10 +218,7 @@ class AttentionModel(nn.Module):
     def _init_embed(self, input):
 
         if self.is_graph or self.is_lp:
-            batch_size, num_nodes, node_dim = input['nodes'].size()
-            nodes = torch.arange(num_nodes, dtype=torch.int64, device=input['nodes'].device)
-            indices = torch.cat(batch_size * [nodes]).view(batch_size, num_nodes, 1)
-            return gcn_utils.encode_indices(indices, 10, scale=1.0, dtype=torch.float32).squeeze(-2)
+            return input['nodes']
 
         if self.is_vrp or self.is_orienteering or self.is_pctsp:
             if self.is_vrp:
