@@ -218,7 +218,7 @@ class AttentionModel(nn.Module):
     def _init_embed(self, input):
 
         if self.is_graph or self.is_lp:
-            return input['nodes']
+            return self.init_embed(input['nodes'])
 
         if self.is_vrp or self.is_orienteering or self.is_pctsp:
             if self.is_vrp:
