@@ -112,7 +112,7 @@ def run(opts):
         baseline = CriticBaseline(
             (
                 CriticNetworkLP(
-                    10,
+                    dim_vocab[opts.awe_steps],
                     opts.embedding_dim,
                     opts.hidden_dim,
                     opts.n_encode_layers,
