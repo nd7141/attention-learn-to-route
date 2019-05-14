@@ -108,11 +108,11 @@ def run(opts):
         baseline = RolloutBaseline(model, problem, opts)
     elif opts.baseline == 'critic_lp':
         assert problem.NAME == 'lp'
-        dim_vocab = {2: 2, 3: 5, 4: 15, 5: 52, 6: 203, 7: 877, 8: 4140}
+        # dim_vocab = {2: 2, 3: 5, 4: 15, 5: 52, 6: 203, 7: 877, 8: 4140}
         baseline = CriticBaseline(
             (
                 CriticNetworkLP(
-                    dim_vocab[opts.awe_steps],
+                    10,
                     opts.embedding_dim,
                     opts.hidden_dim,
                     opts.n_encode_layers,
