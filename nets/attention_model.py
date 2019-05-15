@@ -119,7 +119,8 @@ class AttentionModel(nn.Module):
             n_heads=n_heads,
             embed_dim=embedding_dim,
             n_layers=self.n_encode_layers,
-            normalization=normalization
+            normalization=normalization,
+            graph_size = kwargs.get("graph_size", None)
         )
 
         # For each node we compute (glimpse key, glimpse value, logit key) so 3 * embedding_dim

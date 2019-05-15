@@ -115,10 +115,11 @@ class MultiHeadAttention(nn.Module):
 
 class Normalization(nn.Module):
 
-    def __init__(self, embed_dim, normalization='batch'):
+    def __init__(self, embed_dim, normalization='batch', graph_size=None):
         super(Normalization, self).__init__()
 
-        graph_size = 20
+        if graph_size is None:
+            graph_size = 20
 
         normalizer_class = {
             'batch': nn.BatchNorm1d(embed_dim, momentum=1), #, track_running_stats=False)
@@ -183,6 +184,7 @@ class MultiHeadAttentionLayer(nn.Sequential):
             embed_dim,
             feed_forward_hidden=512,
             normalization='batch',
+            graph_size = None
     ):
         super(MultiHeadAttentionLayer, self).__init__(
             SkipConnection(
@@ -192,7 +194,7 @@ class MultiHeadAttentionLayer(nn.Sequential):
                     embed_dim=embed_dim
                 )
             ),
-            Normalization(embed_dim, normalization),
+            Normalization(embed_dim, normalization, graph_size),
             SkipConnection(
                 nn.Sequential(
                     nn.Linear(embed_dim, feed_forward_hidden),
@@ -200,7 +202,7 @@ class MultiHeadAttentionLayer(nn.Sequential):
                     nn.Linear(feed_forward_hidden, embed_dim)
                 ) if feed_forward_hidden > 0 else nn.Linear(embed_dim, embed_dim)
             ),
-            Normalization(embed_dim, normalization)
+            Normalization(embed_dim, normalization, graph_size)
         )
 
 
@@ -212,15 +214,17 @@ class GraphAttentionEncoder(nn.Module):
             n_layers,
             node_dim=None,
             normalization='batch',
-            feed_forward_hidden=512
+            feed_forward_hidden=512,
+            graph_size = None
     ):
         super(GraphAttentionEncoder, self).__init__()
+
 
         # To map input to embedding space
         self.init_embed = nn.Linear(node_dim, embed_dim) if node_dim is not None else None
 
         self.layers = nn.Sequential(*(
-            MultiHeadAttentionLayer(n_heads, embed_dim, feed_forward_hidden, normalization)
+            MultiHeadAttentionLayer(n_heads, embed_dim, feed_forward_hidden, normalization, graph_size)
             for _ in range(n_layers)
         ))
 
