@@ -153,8 +153,10 @@ class AnonymousWalks(object):
         aws = self.paths[steps]
         pos = dict([(aw, i) for i, aw in enumerate(aws)])  # get positions of each aw
         # get anonymous walks
-        for i in range(self.rw_graph.order()):
-            walks[i] = Counter(map(hash, [self._anonymous_walk(i, steps) for _ in range(samples)]))
+        node2i = dict()
+        for i, node in enumerate(self.rw_graph):
+            walks[i] = Counter(map(hash, [self._anonymous_walk(node, steps) for _ in range(samples)]))
+            node2i[node] = i
         # make embeddings from the counts
         embeddings = dict()
         for i in range(self.rw_graph.order()):
@@ -162,7 +164,7 @@ class AnonymousWalks(object):
             for aw, count in walks[i].items():
                 embeddings[i][pos[aw]] = count/samples
 
-        return np.stack(list(embeddings.values()))
+        return np.stack(list(embeddings.values())), node2i
 
     def _2aw(self, walk):
         '''Converts a random walk to anonymous walks.'''

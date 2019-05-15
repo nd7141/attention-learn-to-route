@@ -76,6 +76,8 @@ def generate_data(dataset_size, graph_size,
         elif type == 'bipartite':
             prob = kwargs["prob"]
             G = connect_graph(make_bipartite_random_graph(graph_size, prob))
+        elif type == 'dimacs':
+                G = read_dimacs(kwargs["graph_fn"])
         else:
             raise ValueError("Unknown type of a graph: {}".format(type))
 
@@ -83,17 +85,35 @@ def generate_data(dataset_size, graph_size,
             save_dimacs(G, f"{kwargs['save_dimacs']}")
 
         aw.graph = G
-        # embeddings = aw.get_sampled_embeddings(steps, samples)
-        embeddings = aw.get_exact_embeddings(steps)
+        embeddings, node2i = aw.get_sampled_embeddings(steps, samples)
+        # embeddings = aw.get_exact_embeddings(steps)
+        # embeddings = np.random.random((len(G), 10))
         # embeddings = np.stack(map(lambda x: [x[1]], list(G.degree())))
+        G = nx.relabel_nodes(G, node2i)
         valids = get_valids(G)
         # data.append((embeddings, valids, np.random.randint(0, G.order(), (1,))))
         data.append((embeddings, valids))
     return data
 
+def read_dimacs(fn):
+    G = nx.Graph()
+    with open(fn) as f:
+        first = next(f)
+        s, _, sn, sm = first.strip().split()
+        assert s == 'p', 'First line should start p'
+        for line in f:
+            output = line.strip().split()
+            u, v = output[1], output[2]
+            G.add_edge(int(u), int(v))
+
+        assert G.order() == int(sn) and G.size() == int(sm), "Dimensions don't match"
+    return G
+
 def save_dimacs(graph, fn):
+    if not os.path.exists(os.path.dirname(fn)):
+        os.makedirs(os.path.dirname(fn))
     with open(fn, 'w+') as f:
-        f.write(f"p lp {graph.order()} {graph.size()}\n")
+        f.write(f"p sp {graph.order()} {graph.size()}\n")
         mapping = ddict(int)
         count = 1
         for u in graph:
@@ -142,6 +162,7 @@ if __name__ == '__main__':
     parser.add_argument("--prob", type=float, default=0.1, help="Probability of an edge in random graph.")
     parser.add_argument("--graph", type=str, default='regular', help="regular, er, path, ba, bipartite")
     parser.add_argument("--save_dimacs", type=str, default=None, help="Filename of dimacs graph")
+    parser.add_argument("--graph_fn", type=str, default=None, help="Filename of provided graph")
     opts = parser.parse_args()
 
     # multiprocessing version
@@ -154,8 +175,55 @@ if __name__ == '__main__':
 
     problem = opts.problem
 
-    G = make_bipartite_random_graph(opts.graph_sizes[0], 0.1)
-    c = []
+    datadir = os.path.join(opts.data_dir, problem, '1graph')
+    os.makedirs(datadir, exist_ok=True)
+
+    # for graph_size in [1000]:
+    #     for type in ['regular', 'bipartite', 'ba', 'er', 'path']:
+    #         start = time.time()
+    #         print(type, graph_size)
+    #         dimacs = 'problems/lp/lpdp/kalp/examples/1{}{}.dimacs'.format(type, graph_size)
+    #         dataset = generate_data(1, graph_size, type=type,
+    #                                 steps=8, samples=1000,
+    #                                 degree=opts.degree, prob=opts.prob,
+    #                                 save_dimacs=dimacs)
+    #         filename = os.path.join(datadir, "{}{}_1{}.pkl".format(problem, graph_size, type))
+    #         save_dataset(dataset, filename)
+    #
+    #         print(time.time()- start)
+
+
+    for type in ['dimacs']:
+        start = time.time()
+        hard_dir = 'problems/lp/lpdp/examples/hard'
+        dirs = os.listdir(hard_dir)
+        print(dirs)
+        for dir in dirs:
+            if os.path.isdir(hard_dir + '/' + dir):
+                fns = os.listdir(hard_dir + '/' + dir)
+                for fn in sorted(fns):
+                    graph_fn = os.path.join(hard_dir, dir, fn)
+                    if os.path.isfile(graph_fn):
+                        if int(graph_fn.split('-')[-3]) < 201:
+                            G = read_dimacs(graph_fn)
+                            if 201 > len(G) > 0:
+                                print(graph_fn, len(G), G.size())
+                                dimacs = 'problems/lp/lpdp/kalp/examples/hard/{}/{}.dimacs'.format(dir, fn)
+                                dataset = generate_data(1, graph_fn, type=type,
+                                                        steps=3, samples=1000,
+                                                        degree=opts.degree, prob=opts.prob,
+                                                        save_dimacs=dimacs,
+                                                        graph_fn = graph_fn)
+                                save_dir = os.path.join(datadir, "hard", dir)
+                                if not os.path.exists(save_dir):
+                                    os.makedirs(save_dir)
+                                filename = os.path.join(save_dir, "{}.pkl".format(fn))
+                                save_dataset(dataset, filename)
+
+                                print(time.time()- start)
+
+    raise Exception
+
     for graph_size in opts.graph_sizes:
         start = time.time()
         datadir = os.path.join(opts.data_dir, problem)
@@ -171,8 +239,6 @@ if __name__ == '__main__':
 
         np.random.seed(opts.seed)
         if problem == 'lp':
-            # dataset = generate_data(opts.dataset_size, graph_size,
-            #                         opts.degree, opxts.awe_steps, opts.awe_samples)
             dataset = generate_data(opts.dataset_size, graph_size, type=opts.graph,
                                     steps=opts.awe_steps, samples=opts.awe_samples,
                           degree=opts.degree, prob = opts.prob,
