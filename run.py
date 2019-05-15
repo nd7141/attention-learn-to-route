@@ -174,7 +174,7 @@ def run(opts):
     if opts.eval_only:
         validate(model, val_dataset, opts)
     else:
-        extra = {'updates': 0, 'avg_reward': 10**8}
+        extra = {'updates': 0, 'avg_reward': 10**8, "best_epoch": -1}
         start = time.time()
         for epoch in range(opts.epoch_start, opts.epoch_start + opts.n_epochs):
 
@@ -191,8 +191,9 @@ def run(opts):
                 extra
             )
         with open("experiments.log", "a+") as f:
-            f.write("{} {:.4f}\n".format(os.path.split(opts.train_dataset)[-1],
-                                     extra["avg_reward"]))
+            f.write("{} {:.4f} {}\n".format('-'.join(os.path.split(opts.train_dataset)[-2:]),
+                                     extra["avg_reward"], extra["best_epoch"]))
+
         finish = time.time()
         print("Took {:.2f} sec for {} epochs".format(finish-start, opts.n_epochs))
 
