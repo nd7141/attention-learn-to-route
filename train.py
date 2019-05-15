@@ -133,6 +133,8 @@ def train_epoch(model, optimizer, baseline, lr_scheduler,
         )
 
     avg_reward = validate(model, val_dataset, opts)
+    if avg_reward < extra["avg_reward"]:
+        extra["avg_reward"] = avg_reward
 
     if not opts.no_tensorboard:
         tb_logger.log_value('val_avg_reward', avg_reward, epoch)
