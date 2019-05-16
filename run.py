@@ -193,7 +193,7 @@ def run(opts):
 
         finish = time.time()
         with open("experiments.log", "a+") as f:
-            f.write("{} {:.4f} {} {:.2f}\n".format('-'.join(os.path.split(opts.train_dataset)[-2:]),
+            f.write("{} {:.4f} {} {:.2f}\n".format('-'.join(opts.train_dataset.split('/')[-2:]),
                                      extra["avg_reward"], extra["best_epoch"], finish - start))
         print("Took {:.2f} sec for {} epochs".format(finish-start, opts.n_epochs))
 

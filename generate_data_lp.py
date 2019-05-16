@@ -178,49 +178,54 @@ if __name__ == '__main__':
     datadir = os.path.join(opts.data_dir, problem, '1graph')
     os.makedirs(datadir, exist_ok=True)
 
-    # for graph_size in [1000]:
-    #     for type in ['regular', 'bipartite', 'ba', 'er', 'path']:
-    #         start = time.time()
-    #         print(type, graph_size)
-    #         dimacs = 'problems/lp/lpdp/kalp/examples/1{}{}.dimacs'.format(type, graph_size)
-    #         dataset = generate_data(1, graph_size, type=type,
-    #                                 steps=8, samples=1000,
-    #                                 degree=opts.degree, prob=opts.prob,
-    #                                 save_dimacs=dimacs)
-    #         filename = os.path.join(datadir, "{}{}_1{}.pkl".format(problem, graph_size, type))
-    #         save_dataset(dataset, filename)
+    for graph_size in [20, 50, 100, 200]:
+        for type in ['regular', 'bipartite', 'ba', 'er', 'path']:
+            for copy in range(5):
+                start = time.time()
+                print(type, graph_size)
+                dimacs = 'problems/lp/lpdp/kalp/examples/random/{}/{}-{}.dimacs'.format(type, graph_size, copy)
+                dataset = generate_data(1, graph_size, type=type,
+                                        steps=3, samples=1000,
+                                        degree=opts.degree, prob=opts.prob,
+                                        save_dimacs=dimacs)
+
+                save_dir = os.path.join(datadir, "random", type)
+                if not os.path.exists(save_dir):
+                    os.makedirs(save_dir)
+                filename = os.path.join(save_dir, "{}-{}.pkl".format(graph_size, copy))
+                save_dataset(dataset, filename)
+
+        print(time.time()- start)
+
+
+    # for type in ['dimacs']:
+    #     start = time.time()
+    #     hard_dir = 'problems/lp/lpdp/examples/hard'
+    #     dirs = os.listdir(hard_dir)
+    #     print(dirs)
+    #     for dir in dirs:
+    #         if os.path.isdir(hard_dir + '/' + dir):
+    #             fns = os.listdir(hard_dir + '/' + dir)
+    #             for fn in sorted(fns):
+    #                 graph_fn = os.path.join(hard_dir, dir, fn)
+    #                 if os.path.isfile(graph_fn):
+    #                     if int(graph_fn.split('-')[-3]) < 201:
+    #                         G = read_dimacs(graph_fn)
+    #                         if 201 > len(G) > 0:
+    #                             print(graph_fn, len(G), G.size())
+    #                             dimacs = 'problems/lp/lpdp/kalp/examples/hard/{}/{}.dimacs'.format(dir, fn)
+    #                             dataset = generate_data(1, graph_fn, type=type,
+    #                                                     steps=3, samples=1000,
+    #                                                     degree=opts.degree, prob=opts.prob,
+    #                                                     save_dimacs=dimacs,
+    #                                                     graph_fn = graph_fn)
+    #                             save_dir = os.path.join(datadir, "hard", dir)
+    #                             if not os.path.exists(save_dir):
+    #                                 os.makedirs(save_dir)
+    #                             filename = os.path.join(save_dir, "{}.pkl".format(fn))
+    #                             save_dataset(dataset, filename)
     #
-    #         print(time.time()- start)
-
-
-    for type in ['dimacs']:
-        start = time.time()
-        hard_dir = 'problems/lp/lpdp/examples/hard'
-        dirs = os.listdir(hard_dir)
-        print(dirs)
-        for dir in dirs:
-            if os.path.isdir(hard_dir + '/' + dir):
-                fns = os.listdir(hard_dir + '/' + dir)
-                for fn in sorted(fns):
-                    graph_fn = os.path.join(hard_dir, dir, fn)
-                    if os.path.isfile(graph_fn):
-                        if int(graph_fn.split('-')[-3]) < 201:
-                            G = read_dimacs(graph_fn)
-                            if 201 > len(G) > 0:
-                                print(graph_fn, len(G), G.size())
-                                dimacs = 'problems/lp/lpdp/kalp/examples/hard/{}/{}.dimacs'.format(dir, fn)
-                                dataset = generate_data(1, graph_fn, type=type,
-                                                        steps=3, samples=1000,
-                                                        degree=opts.degree, prob=opts.prob,
-                                                        save_dimacs=dimacs,
-                                                        graph_fn = graph_fn)
-                                save_dir = os.path.join(datadir, "hard", dir)
-                                if not os.path.exists(save_dir):
-                                    os.makedirs(save_dir)
-                                filename = os.path.join(save_dir, "{}.pkl".format(fn))
-                                save_dataset(dataset, filename)
-
-                                print(time.time()- start)
+    #                             print(time.time()- start)
 
     raise Exception
 
@@ -233,6 +238,10 @@ if __name__ == '__main__':
             filename = os.path.join(datadir, "{}{}_{}_seed{}.pkl".format(problem, graph_size, opts.name, opts.seed))
         else:
             filename = check_extension(opts.filename)
+
+        save_dir = os.path.join(datadir, "random", dir)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir, exist_ok=True)
 
         assert opts.f or not os.path.isfile(check_extension(filename)), \
             "File already exists! Try running with -f option to overwrite."
