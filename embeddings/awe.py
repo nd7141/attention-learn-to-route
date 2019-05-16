@@ -128,14 +128,18 @@ class AnonymousWalks(object):
         while True:
             r = random.uniform(0, 1)
             low = 0
-            for v in self.rw_graph[node]:
-                p = self.rw_graph[node][v]['weight']
-                if r <= low + p and v not in visited:
-                    visited.add(v)
-                    node = v
-                    walk.append(node)
+            total_p = sum([self.rw_graph[node][v]['weight'] for v in self.rw_graph[node] if v not in visited])
+            if total_p > 0:
+                for v in self.rw_graph[node]:
+                    p = self.rw_graph[node][v]['weight']/total_p
+                    if r <= low + p and v not in visited:
+                        visited.add(v)
+                        node = v
+                        walk.append(node)
+                        break
+                    low += p
+                else:
                     break
-                low += p
             else:
                 break
         return tuple(walk)
