@@ -39,13 +39,11 @@ def run_mc():
     start = time.time()
     node2max = dict()
     for node in aw.rw_graph:
-        node = 19
         f = partial(get_length, node)
         pool = Pool()
         results = pool.map(f, range(opts.n_samples))
         node2max[node] = np.max(results)
         pool.close()
-        break
     avg_max = np.mean(list(node2max.values()))
 
     finish = time.time()
